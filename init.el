@@ -91,6 +91,10 @@
 ;;;; Company Mode
 (after 'company-mode
   (add-hook 'scheme-mode company-mode))
+;;;; Paredit Mode
+(after 'paredit-mode
+  (add-hook 'scheme-mode paredit-mode))
+
 
 ;;;; themes
 ;;load each theme in the themes folder
