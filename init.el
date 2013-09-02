@@ -5,7 +5,8 @@
  ;; If there is more than one, they won't work right.
  '(ac-delay 0.03)
  '(ac-modes (quote (emacs-lisp-mode lisp-mode lisp-interaction-mode c-mode cc-mode c++-mode java-mode malabar-mode clojure-mode clojurescript-mode scala-mode scheme-mode ocaml-mode tuareg-mode coq-mode haskell-mode agda-mode agda2-mode perl-mode cperl-mode python-mode ruby-mode lua-mode ecmascript-mode javascript-mode js-mode js2-mode php-mode css-mode makefile-mode sh-mode fortran-mode f90-mode ada-mode xml-mode sgml-mode ts-mode scheme-mode)))
- '(company-idle-delay 0.3)
+ '(company-global-modes t)
+ '(company-idle-delay 0.5)
  '(custom-safe-themes (quote ("1e7e097ec8cb1f8c3a912d7e1e0331caeed49fef6cff220be63bd2a6ba4cc365" "fc5fcb6f1f1c1bc01305694c59a1a861b008c534cae8d0e48e4d5e81ad718bc6" default)))
  '(custom-theme-load-path (quote (custom-theme-directory t)))
  '(geiser-mode-company-p t)
@@ -89,11 +90,15 @@
 ;;Geiser doesn't really need configuration (I think)
 
 ;;;; Company Mode
+(add-hook 'scheme-mode-hook 'company-mode)
+(setq company-begin-commands '(self-insert-command))
 (after 'company-mode
-  (add-hook 'scheme-mode company-mode))
+  (add-hook 'scheme-mode-hook 'company-mode)
+  (add-hook 'c-mode-hook 'company-mode))
 ;;;; Paredit Mode
+(add-hook 'scheme-mode-hook 'paredit-mode)
 (after 'paredit-mode
-  (add-hook 'scheme-mode paredit-mode))
+  (add-hook 'scheme-mode-hook 'paredit-mode))
 
 
 ;;;; themes
