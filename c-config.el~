@@ -1,7 +1,0 @@
-
-(add-hook 'c-mode-common-hook 'global-ede-mode)
-(add-hook 'c-mode-common-hook 'global-company-mode)
-(add-hook 'c-mode-common-hook 'global-linum-mode)
-(add-hook 'c-mode-common-hook 'electric-pair-mode)
-(add-hook 'c-mode-common-hook 'electric-indent-mode)
-(add-hook 'c-mode-common-hook 'show-paren-mode)
