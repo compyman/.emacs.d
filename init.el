@@ -25,7 +25,7 @@
 	     '("melpa" . "http://melpa.milkbox.net/packages/") t)
 (mapc '(lambda (package)
 	 (unless (package-installed-p package)
-			   (package-install package)))
+			   (ignore-errors (package-install package))))
       '(rainbow-delimiters
 	auto-complete
 	hungry-delete
