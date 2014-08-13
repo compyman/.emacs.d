@@ -23,6 +23,7 @@
 
 (add-to-list 'package-archives
 	     '("melpa" . "http://melpa.milkbox.net/packages/") t)
+(package-initialize)
 (mapc '(lambda (package)
 	 (unless (package-installed-p package)
 			   (ignore-errors (package-install package))))
@@ -39,7 +40,7 @@
 	flycheck-color-mode-line
 	slime))
 
-(package-initialize)
+
 ;;load each folder in the elpa directory
 (let ((default-directory "~/.emacs.d/elpa/"))
   (normal-top-level-add-subdirs-to-load-path))
