@@ -14,19 +14,22 @@
 (setq inhibit-startup-screen t)
 
 ;;;; package.el
-(require 'package)
 (package-initialize)
+(unless (file-exists-p "~/.emacs.d/elpa/")
+  (make-directory "~/.emacs.d/elpa"))
 (setq package-user-dir "~/.emacs.d/elpa/")
 		
 (add-to-list 'package-archives 
-	     '("marmalade" . "http://marmalade-repo.org/packages/") t)
-
+	     '("marmalade" . "http://marmalade-repo.org/packages/")) 
 (add-to-list 'package-archives
 	     '("melpa" . "http://melpa.milkbox.net/packages/") t)
-(package-initialize)
+;;(add-to-list 'package-archives
+;;	     '("gnu" . "http://elpa.gnu.org/packages/"))
+(when (not package-archive-contents)
+  (package-refresh-contents))
 (mapc '(lambda (package)
 	 (unless (package-installed-p package)
-			   (ignore-errors (package-install package))))
+			 (ignore-errors  (package-install package))))
       '(rainbow-delimiters
 	auto-complete
 	hungry-delete
@@ -38,7 +41,8 @@
 	undo-tree
 	flycheck
 	flycheck-color-mode-line
-	slime))
+	slime
+	cyberpunk-theme))
 
 
 ;;load each folder in the elpa directory
@@ -86,13 +90,15 @@
   (add-hook 'scheme-mode-hook 'enable-paredit-mode))
 
 ;;;;Auctex Mode
-(require 'tex)
+(after 'auctex-autoloads
+  (require 'tex))
 
 ;;;; Flycheck Mode
 (after 'flycheck-autoloads
   (add-hook 'c-mode-hook 'flycheck-mode)
   (add-hook 'c++-mode-hook 'flycheck-mode)
   (add-hook 'go-mode-hook 'flycheck-mode)
+  (add-hook 'rust-mode-hook 'flycheck-mode)
   (setq flycheck-clang-language-standard "c++11")
   (after 'flycheck-color-mode-line-autoloads
     (add-hook 'flycheck-mode-hook 'flycheck-color-mode-line-mode)))
@@ -156,5 +162,5 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
-
-(load-theme 'cyberpunk)
+(after 'cyberpunk-theme-autoloads
+  (load-theme 'cyberpunk))
