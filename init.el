@@ -50,6 +50,7 @@
 	undo-tree
 	flycheck
 	flycheck-color-mode-line
+	exec-path-from-shell
 	slime
 	paradox
 	moe-theme))
@@ -112,6 +113,10 @@
   (after "flycheck-color-mode-line-autoloads"
     (add-hook 'flycheck-mode-hook 'flycheck-color-mode-line-mode)))
 
+;;;; in mac add shell path to emacs exec path
+(after "exec-path-from-shell-autoloads"
+  (when (memq window-system '(mac ns))
+    (exec-path-from-shell-initialize)))
 ;;;; RUST MODE
 (after "rust-mode-autoloads"
   (after "racer-autoloads"
@@ -120,7 +125,7 @@
     (add-hook 'rust-mode-hook 'racer-mode)
     (add-hook 'rust-mode-hook 'eldoc-mode))
   (after "flycheck-autoloads"
-    (add-hook 'flycheck-mode-hook 'flycheck-rust-setup))
+    (add-hook 'flycheck-mode-hook #'flycheck-rust-setup))
   (set (make-local-variable 'company-backends)'(company-racer))
   (local-set-key (kbd "M-.") 'racer-find-definition)) 
 
