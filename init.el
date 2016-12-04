@@ -24,22 +24,23 @@
   (make-directory "~/.emacs.d/elpa"))
 (setq package-user-dir "~/.emacs.d/elpa/")
 		
-(add-to-list 'package-archives 
-	     '("marmalade" . "http://marmalade-repo.org/packages/")) 
 (add-to-list 'package-archives
 	     '("melpa" . "http://melpa.milkbox.net/packages/") t)
 ;;(add-to-list 'package-archives
 ;;	     '("gnu" . "http://elpa.gnu.org/packages/"))
 (when (not package-archive-contents)
   (package-refresh-contents))
-(mapc '(lambda (package)
+(mapc #'(lambda (package)
 	 (unless (package-installed-p package)
-			 (ignore-errors  (package-install package))))
+	   (package-install package)))
       '(rainbow-delimiters
+	avy
 	company
 	rust-mode
 	racer
 	company-racer
+	company-go
+	go-eldoc
 	flycheck-rust
 	hungry-delete
 	paredit
@@ -50,7 +51,6 @@
 	undo-tree
 	flycheck
 	flycheck-color-mode-line
-	exec-path-from-shell
 	slime
 	paradox
 	moe-theme))
@@ -137,20 +137,16 @@
   (setq company-tooltip-align-annotations t))
 ;;;; Go Mode
 (after "go-mode-autoloads"
-  (setq exec-path (append exec-path '("/home/nate/go/bin"))))
+  (after "go-eldoc-autoloads"
+    (add-hook 'go-mode-hook 'go-eldoc-setup))
+  (add-hook 'before-save-hook 'gofmt-before-save)
+  (add-to-list 'company-backends 'company-go))
 
 ;;;;Org-mode
 (after "org-autoloads"
   (define-key global-map "\C-cl" 'org-store-link)
   (define-key global-map "\C-ca" 'org-agenda)
   (setq org-log-done t))
-
-
-;;;;Auto Complete
-;; (after "auto-complete" ;;no autoload since we need the symbols to be defined
-;;   (ac-config-default)
-;;   (add-to-list 'ac-dictionary-directories "~/.emacs.d/ac-dict")
-;;   (ac-set-trigger-key "\t"))
 
 ;;;;Javascript Mode
 (after "js2-mode-autoloads"
@@ -172,13 +168,19 @@
 
 ;;;;Hungry Delete Mode
 ;; MOST IMPORTANT
-(after "hungry-delete-autoloads"
-  (global-hungry-delete-mode))
+;; (after "hungry-delete-autoloads"
+;;   (global-hungry-delete-mode))
 ;;;;Undo Tree Mode
 (after "undo-tree-autoloads"
   (global-undo-tree-mode t)
   (setq undo-tree-visualizer-relative-timestamps t)
   (setq undo-tree-visualizer-timestamps t))
+
+;;; Avy Mode
+(after "avy-autoloads"
+  (global-set-key (kbd "C-;") 'avy-goto-char))
+
+
 ;;; init.el ends here
 
 
@@ -192,7 +194,10 @@
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    (quote
-    ("8e5dd88c42089566d5f8e1a23d3017c213eeccd94a7b9e1a58a2dc3e08cb26d5" "685a7460fdc4b8c38796234d3a96b3aacbe4fba739fb33b5d6d149051ce74a58" default)))
+    ("a1289424bbc0e9f9877aa2c9a03c7dfd2835ea51d8781a0bf9e2415101f70a7e" "32e3693cd7610599c59997fee36a68e7dd34f21db312a13ff8c7e738675b6dfc" "8e5dd88c42089566d5f8e1a23d3017c213eeccd94a7b9e1a58a2dc3e08cb26d5" "685a7460fdc4b8c38796234d3a96b3aacbe4fba739fb33b5d6d149051ce74a58" default)))
+ '(package-selected-packages
+   (quote
+    (company-go go-eldoc company-racer company powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex ac-js2 js2-mode magit paredit hungry-delete flycheck-rust racer rust-mode rainbow-delimiters)))
  '(paradox-github-token t))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
@@ -200,7 +205,7 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
-(after "moe-theme-autoloads"
-  (require 'moe-theme)
-  (load-theme 'moe-dark))
+(after "atom-dark-theme-autoloads"
+  (require 'atom-dark-theme)
+  (load-theme 'atom-dark))
 
