@@ -8,6 +8,8 @@
 (when (eq system-type 'darwin)
   (setq mac-option-modifier 'alt)
   (setq mac-command-modifier 'meta)
+  (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+  (add-to-list 'default-frame-alist '(ns-appearance . dark))
   (global-set-key [kp-delete] 'delete-char))
 
 ;;set backup behavior
@@ -17,6 +19,8 @@
       `((".*" ,temporary-file-directory t)))
 ;; No splash screen please...
 (setq inhibit-startup-screen t)
+;; set auth-sources to use an encrypted file
+(setq auth-sources '((:source "~/.authinfo.gpg")))
 
 ;;;; package.el
 (package-initialize)
@@ -26,34 +30,31 @@
 		
 (add-to-list 'package-archives
 	     '("melpa" . "http://melpa.milkbox.net/packages/") t)
-;;(add-to-list 'package-archives
-;;	     '("gnu" . "http://elpa.gnu.org/packages/"))
-(when (not package-archive-contents)
-  (package-refresh-contents))
 (mapc #'(lambda (package)
 	 (unless (package-installed-p package)
 	   (package-install package)))
-      '(rainbow-delimiters
+      '(elpy
+        dart-mode
+	rainbow-delimiters
 	avy
+	exec-path-from-shell
 	company
 	rust-mode
 	racer
 	company-racer
 	company-go
 	go-eldoc
-	flycheck-rust
 	hungry-delete
 	paredit
 	magit
-	js2-mode
-	ac-js2
 	auctex
 	undo-tree
 	flycheck
 	flycheck-color-mode-line
+	flycheck-rust
 	slime
 	paradox
-	moe-theme))
+	atom-dark-theme))
 
 ;;load each folder in the elpa directory
 (let ((default-directory "~/.emacs.d/elpa/"))
@@ -85,7 +86,7 @@
   (add-hook 'emacs-lisp-mode-hook 'rainbow-delimiters-mode t))
 
 ;;;; prog minor modes
-(add-hook 'prog-mode-hook 'global-linum-mode)
+(add-hook 'prog-mode-hook 'global-display-line-numbers-mode)
 (add-hook 'prog-mode-hook 'electric-pair-mode)
 (add-hook 'prog-mode-hook 'electric-indent-mode)
 
@@ -105,10 +106,13 @@
 
 ;;;; Flycheck Mode
 (after "flycheck-autoloads"
+  (setq-default flycheck-disabled-checkers '())
+  (append flycheck-disabled-checkers 'javascript-eslint)
   (add-hook 'c-mode-hook 'flycheck-mode)
   (add-hook 'c++-mode-hook 'flycheck-mode)
   (add-hook 'go-mode-hook 'flycheck-mode)
   (add-hook 'rust-mode-hook 'flycheck-mode)
+  (add-hook 'js-mode-hook 'flycheck-mode)
   (setq flycheck-clang-language-standard "c++11")
   (after "flycheck-color-mode-line-autoloads"
     (add-hook 'flycheck-mode-hook 'flycheck-color-mode-line-mode)))
@@ -144,22 +148,9 @@
 
 ;;;;Org-mode
 (after "org-autoloads"
-  (define-key global-map "\C-cl" 'org-store-link)
-  (define-key global-map "\C-ca" 'org-agenda)
+  (define-key global-map (kbd  "C-c l") 'org-store-link)
+  (define-key global-map (kbd "C-c a") 'org-agenda)
   (setq org-log-done t))
-
-;;;;Javascript Mode
-(after "js2-mode-autoloads"
-  (add-hook 'js-mode-hook 'js2-minor-mode)
-  (add-hook 'js-mode-hook 'js2-mode)
-  (setq js2-highlight-level 3)
-  (after "ac-js2-autoloads"
-     (add-hook 'js2-mode-hook (lambda () (slime-js-minor-mode 1)))
-    (add-hook 'js-mode-hook 'ac-js2-mode))
-  (after "paredit-autoloads"
-    (after "js"
-      (define-key js-mode-map "{" 'paredit-open-curly)
-      (define-key js-mode-map "}" 'paredit-close-curly-and-newline))))
 
 ;;;;Yasnippet
 (after "yasnippet-autoloads"
@@ -178,8 +169,23 @@
 
 ;;; Avy Mode
 (after "avy-autoloads"
-  (global-set-key (kbd "C-;") 'avy-goto-char))
+  (global-set-key (kbd "C-;") 'avy-goto-word-or-subword-1))
 
+;;; elpy
+
+(after "elpy-autoloads"
+  (elpy-enable)
+  (add-hook 'python-mode-hook 'elpy-mode))
+
+
+(after "dart-mode-autoloads"
+  (setq dart-format-on-save t)
+  (setq dart-enable-analysis-server t)
+  (add-hook 'dart-mode-hook 'flycheck-mode))
+
+;;; ace-window
+(after "ace-window-autoloads"
+  (global-set-key (kbd "M-o") 'ace-window))
 
 ;;; init.el ends here
 
@@ -194,11 +200,15 @@
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    (quote
-    ("a1289424bbc0e9f9877aa2c9a03c7dfd2835ea51d8781a0bf9e2415101f70a7e" "32e3693cd7610599c59997fee36a68e7dd34f21db312a13ff8c7e738675b6dfc" "8e5dd88c42089566d5f8e1a23d3017c213eeccd94a7b9e1a58a2dc3e08cb26d5" "685a7460fdc4b8c38796234d3a96b3aacbe4fba739fb33b5d6d149051ce74a58" default)))
+    ("2642a1b7f53b9bb34c7f1e032d2098c852811ec2881eec2dc8cc07be004e45a0" "76dc63684249227d64634c8f62326f3d40cdc60039c2064174a7e7a7a88b1587" "e9460a84d876da407d9e6accf9ceba453e2f86f8b86076f37c08ad155de8223c" "78496062ff095da640c6bb59711973c7c66f392e3ac0127e611221d541850de2" "6a23db7bccf6288fd7c80475dc35804c73f9c9769ad527306d2e0eada1f8b466" "6dd2b995238b4943431af56c5c9c0c825258c2de87b6c936ee88d6bb1e577cb9" "c620ce43a0b430dcc1b06850e0a84df4ae5141d698d71e17de85e7494377fd81" "a1289424bbc0e9f9877aa2c9a03c7dfd2835ea51d8781a0bf9e2415101f70a7e" "32e3693cd7610599c59997fee36a68e7dd34f21db312a13ff8c7e738675b6dfc" "8e5dd88c42089566d5f8e1a23d3017c213eeccd94a7b9e1a58a2dc3e08cb26d5" "685a7460fdc4b8c38796234d3a96b3aacbe4fba739fb33b5d6d149051ce74a58" default)))
+ '(fci-rule-color "#3E4451")
+ '(flycheck-javascript-eslint-executable nil)
+ '(indent-tabs-mode nil)
  '(package-selected-packages
    (quote
-    (company-go go-eldoc company-racer company powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex ac-js2 js2-mode magit paredit hungry-delete flycheck-rust racer rust-mode rainbow-delimiters)))
- '(paradox-github-token t))
+    (ace-window flycheck-yamllint yaml-mode geiser dart-mode emojify tuareg flymake-jslint wc-mode ini-mode json-mode ace-jump-mode elpy atom-one-dark-theme markdown-mode company-go go-eldoc company-racer company powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex magit paredit hungry-delete flycheck-rust racer rust-mode rainbow-delimiters)))
+ '(paradox-github-token t)
+ '(safe-local-variable-values (quote ((elpy-project-root "./") (pyvenv-workon "remit")))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
