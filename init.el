@@ -1,7 +1,8 @@
+(setq ring-bell-function 'ignore)
 ;; init.el --- Milkmacs configuration file
 ;;;; Emacs Settings
-;; Turn off mouse interface early in startup to avoid momentary display
-(when (fboundp 'menu-bar-mode) (menu-bar-mode -1))
+;; ≈urn off mouse interface early in startup to avoid momentary display
+; (when (fboundp 'menu-bar-mode) (menu-bar-mode -1))
 (when (fboundp 'tool-bar-mode) (tool-bar-mode -1))
 (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
 
@@ -30,6 +31,7 @@
 		
 (add-to-list 'package-archives
 	     '("melpa" . "http://melpa.milkbox.net/packages/") t)
+
 (mapc #'(lambda (package)
 	 (unless (package-installed-p package)
 	   (package-install package)))
@@ -203,18 +205,21 @@
     ("2642a1b7f53b9bb34c7f1e032d2098c852811ec2881eec2dc8cc07be004e45a0" "76dc63684249227d64634c8f62326f3d40cdc60039c2064174a7e7a7a88b1587" "e9460a84d876da407d9e6accf9ceba453e2f86f8b86076f37c08ad155de8223c" "78496062ff095da640c6bb59711973c7c66f392e3ac0127e611221d541850de2" "6a23db7bccf6288fd7c80475dc35804c73f9c9769ad527306d2e0eada1f8b466" "6dd2b995238b4943431af56c5c9c0c825258c2de87b6c936ee88d6bb1e577cb9" "c620ce43a0b430dcc1b06850e0a84df4ae5141d698d71e17de85e7494377fd81" "a1289424bbc0e9f9877aa2c9a03c7dfd2835ea51d8781a0bf9e2415101f70a7e" "32e3693cd7610599c59997fee36a68e7dd34f21db312a13ff8c7e738675b6dfc" "8e5dd88c42089566d5f8e1a23d3017c213eeccd94a7b9e1a58a2dc3e08cb26d5" "685a7460fdc4b8c38796234d3a96b3aacbe4fba739fb33b5d6d149051ce74a58" default)))
  '(fci-rule-color "#3E4451")
  '(flycheck-javascript-eslint-executable nil)
+ '(global-display-line-numbers-mode t)
  '(indent-tabs-mode nil)
  '(package-selected-packages
    (quote
-    (ace-window flycheck-yamllint yaml-mode geiser dart-mode emojify tuareg flymake-jslint wc-mode ini-mode json-mode ace-jump-mode elpy atom-one-dark-theme markdown-mode company-go go-eldoc company-racer company powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex magit paredit hungry-delete flycheck-rust racer rust-mode rainbow-delimiters)))
+    (bicycle ace-window flycheck-yamllint yaml-mode geiser dart-mode emojify tuareg flymake-jslint wc-mode ini-mode json-mode ace-jump-mode elpy atom-one-dark-theme markdown-mode company-go go-eldoc company-racer company powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex magit paredit hungry-delete flycheck-rust racer rust-mode rainbow-delimiters)))
  '(paradox-github-token t)
- '(safe-local-variable-values (quote ((elpy-project-root "./") (pyvenv-workon "remit")))))
+ '(safe-local-variable-values (quote ((elpy-project-root "./") (pyvenv-workon "remit"))))
+ '(show-paren-mode t)
+ '(tool-bar-mode nil))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(default ((t (:inherit nil :stipple nil :background "#1d1f21" :foreground "#c5c8c6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 120 :width normal :foundry "nil" :family "Space Mono")))))
 (after "atom-dark-theme-autoloads"
   (require 'atom-dark-theme)
   (load-theme 'atom-dark))
