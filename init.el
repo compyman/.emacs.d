@@ -1,16 +1,16 @@
 (setq ring-bell-function 'ignore)
 ;; init.el --- Milkmacs configuration file
 ;;;; Emacs Settings
-;; ≈urn off mouse interface early in startup to avoid momentary display
+;; Turn off mouse interface early in startup to avoid momentary display
 ; (when (fboundp 'menu-bar-mode) (menu-bar-mode -1))
 (when (fboundp 'tool-bar-mode) (tool-bar-mode -1))
 (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
-
 (when (eq system-type 'darwin)
+  (setq dired-use-ls-dired nil)
   (setq mac-option-modifier 'alt)
   (setq mac-command-modifier 'meta)
-  (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
-  (add-to-list 'default-frame-alist '(ns-appearance . dark))
+  ;;  (add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+  ;;  (add-to-list 'default-frame-alist '(ns-appearance . dark))
   (global-set-key [kp-delete] 'delete-char))
 
 ;;set backup behavior
@@ -18,8 +18,6 @@
       `((".*" . ,temporary-file-directory)))
 (setq auto-save-file-name-transforms
       `((".*" ,temporary-file-directory t)))
-;; No splash screen please...
-(setq inhibit-startup-screen t)
 ;; set auth-sources to use an encrypted file
 (setq auth-sources '((:source "~/.authinfo.gpg")))
 
@@ -58,6 +56,8 @@
 (let ((default-directory "~/.emacs.d/elpa/"))
   (normal-top-level-add-subdirs-to-load-path))
 
+(load "~/.emacs.d/elegance")
+(load "~/.emacs.d/sanity")
 ;;;; macros
 (defmacro after (mode &rest body)
   "`eval-after-load' MODE evaluate BODY."
@@ -112,6 +112,25 @@
   (setq flycheck-clang-language-standard "c++11")
   (after "flycheck-color-mode-line-autoloads"
     (add-hook 'flycheck-mode-hook 'flycheck-color-mode-line-mode)))
+
+
+(after "counsel-autoloads"
+  (ivy-mode 1)
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-count-format "(%d/%d) ")
+  (global-set-key (kbd "C-s") 'swiper-isearch)
+  (global-set-key (kbd "M-x") 'counsel-M-x)
+  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
+  (global-set-key (kbd "M-y") 'counsel-yank-pop)
+  (global-set-key (kbd "<f1> f") 'counsel-describe-function)
+  (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
+  (global-set-key (kbd "<f1> l") 'counsel-find-library)
+  (global-set-key (kbd "<f2> i") 'counsel-info-lookup-symbol)
+  (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
+  (global-set-key (kbd "<f2> j") 'counsel-set-variable)
+  (global-set-key (kbd "C-x b") 'ivy-switch-buffer)
+  (global-set-key (kbd "C-c v") 'ivy-push-view)
+  (global-set-key (kbd "C-c V") 'ivy-pop-view))
 
 ;;;; in mac add shell path to emacs exec path
 (after "exec-path-from-shell-autoloads"
@@ -203,7 +222,7 @@
  '(lsp-ui-flycheck-enable t)
  '(package-selected-packages
    (quote
-    (ein org ess-R-data-view ess haskell-mode company-lsp lsp-mode lsp-ui rust-mode dash-alfred bicycle ace-window flycheck-yamllint yaml-mode geiser emojify tuareg flymake-jslint wc-mode ini-mode json-mode ace-jump-mode elpy atom-one-dark-theme markdown-mode go-eldoc powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex magit paredit hungry-delete flycheck-rust rainbow-delimiters)))
+    (counsel ein org ess-R-data-view ess haskell-mode company-lsp lsp-mode lsp-ui rust-mode dash-alfred bicycle ace-window flycheck-yamllint yaml-mode geiser emojify tuareg flymake-jslint wc-mode ini-mode json-mode ace-jump-mode elpy atom-one-dark-theme markdown-mode go-eldoc powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex magit paredit hungry-delete flycheck-rust rainbow-delimiters)))
  '(paradox-execute-asynchronously t)
  '(paradox-github-token t)
  '(paradox-spinner-type (quote moon))
@@ -215,14 +234,12 @@
      (pyvenv-workon "remit"))))
  '(show-paren-mode t)
  '(tool-bar-mode nil))
-;; (after "atom-dark-theme-autoloads"
-;;   (require 'atom-dark-theme)
-;;   (load-theme 'atom-dark))
+;;  (after "atom-dark-theme-autoloads"
+;;    (require 'atom-dark-theme)
+;;    (load-theme 'atom-dark))
 
-(after "eink-theme-autoloads"
-  (load-theme 'eink))
-
-(put 'narrow-to-region 'disabled nil)
+;; (after "eink-theme-autoloads"
+;;   (load-theme 'eink))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
