@@ -32,7 +32,7 @@
 	     '("melpa" . "https://melpa.org/packages/") t)
 
 (mapc #'(lambda (package)
-	 (unless (package-installed-p package)
+	  (unless (package-installed-p package)
 	   (package-install package)))
       '(elpy
 	rainbow-delimiters
@@ -47,12 +47,19 @@
 	flycheck-color-mode-line
 	slime
 	paradox
-	eink-theme
         rust-mode
+        projectile
         lsp-mode
         lsp-ui
+        lsp-ivy
+        lsp-python-ms
+        dap-mode
+        smartparens
+        prescient
+        ivy-prescient
+        crux
+        easy-kill
         ein))
-
 ;;load each folder in the elpa directory
 (let ((default-directory package-dir))
   (normal-top-level-add-subdirs-to-load-path))
@@ -63,7 +70,8 @@
       (append (list '(width  . 72) '(height . 40)
                     '(vertical-scroll-bars . nil)
                     '(internal-border-width . 24)
-                    '(font . "Roboto Mono Light 10"))))
+                    '(font . "Roboto Mono Light 10")
+                    )))
 
 ;(load "~/.emacs.d/elegance")
 ;(load "~/.emacs.d/sanity")
@@ -94,9 +102,7 @@
 
 ;;;; prog minor modes
 (add-hook 'prog-mode-hook 'global-display-line-numbers-mode)
-(add-hook 'prog-mode-hook 'electric-pair-mode)
-(add-hook 'prog-mode-hook 'electric-indent-mode)
-
+(electric-pair-mode)
 ;;;; show-paren-mode
 (setq show-paren-style 'parenthesis)
 (add-hook 'prog-mode-hook 'show-paren-mode)
@@ -180,16 +186,17 @@
 (after "avy-autoloads"
   (global-set-key (kbd "C-;") 'avy-goto-word-or-subword-1))
 
-;;; elpy
-
-;; (after "elpy-autoloads"
-;;   (elpy-enable)
-;;   (add-hook 'python-mode-hook 'elpy-mode))
-
 (after "lsp-mode-autoloads"
   (after "lsp-ui-mode-autoloads"
-    (add-hook 'lsp-mode-hook 'lsp-ui-mode))
-  (add-hook 'python-mode-hook #'lsp)
+    (add-hook 'lsp-mode-hook 'lsp-ui-mode 'lsp-ivy))
+  (after "lsp-ivy-autoloads"
+    (add-hook 'lsp-mode (lambda () (define-key lsp-mode-map [remap xref-find-apropos] #'lsp-ivy-workspace-symbol))))
+  (after "dap-mode-autoloads"
+    (require 'dap-python)
+    (add-hook 'lsp-mode-hook #'dap-auto-configure-mode))
+  (add-hook 'python-mode-hook #'lsp-deferred)
+  (require 'lsp-python-ms)
+      
   (setq gc-cons-threshold 100000000)
   (setq read-process-output-max (* 1024 1024)))
 ;; 1mb
@@ -212,6 +219,12 @@
 (after "ein-autoloads"
   (require 'ein)
   (require 'ein-notebook))
+
+;;; smartparens
+(after "smartparens-autoloads"
+  (require 'smartparens-config)
+  (add-hook 'python-mode-hook #'smartparens-strict-mode))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -228,11 +241,15 @@
  '(elpy-rpc-virtualenv-path 'current)
  '(fci-rule-color "#3E4451")
  '(flycheck-javascript-eslint-executable nil)
+ '(geiser-guile-binary "/usr/local/stow/guile-3/bin/guile")
+ '(geiser-guile-load-path
+   '("/usr/local/stow/guile-3/share/guile/" "/usr/local/stow/guile-3/share/guile/3.0"))
  '(global-display-line-numbers-mode t)
  '(indent-tabs-mode nil)
+ '(lsp-python-ms-extra-paths ["src"])
  '(lsp-ui-flycheck-enable t)
  '(package-selected-packages
-   '(solarized-theme ivy projectile counsel ein org ess-R-data-view ess haskell-mode lsp-mode lsp-ui rust-mode dash-alfred bicycle ace-window flycheck-yamllint yaml-mode geiser emojify tuareg flymake-jslint wc-mode ini-mode json-mode ace-jump-mode elpy atom-one-dark-theme markdown-mode go-eldoc powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex magit paredit hungry-delete flycheck-rust rainbow-delimiters))
+   '(use-package easy-kill crux ivy-prescient prescient smartparens dap-mode lsp-ivy lsp-python-ms solarized-theme ivy projectile counsel ein org ess-R-data-view ess haskell-mode lsp-mode lsp-ui rust-mode dash-alfred bicycle ace-window flycheck-yamllint yaml-mode geiser emojify tuareg flymake-jslint wc-mode ini-mode json-mode ace-jump-mode elpy atom-one-dark-theme markdown-mode go-eldoc powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex magit paredit hungry-delete flycheck-rust rainbow-delimiters))
  '(paradox-execute-asynchronously t)
  '(paradox-github-token t)
  '(paradox-spinner-type 'moon)
@@ -266,4 +283,4 @@
 (projectile-mode +1)
 (define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
 (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
-(load-theme 'solarized-dark)
+(load-theme 'solarized-light-high-contrast)
