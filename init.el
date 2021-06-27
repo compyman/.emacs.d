@@ -23,8 +23,18 @@
 
 ;;;; package.el
 (setq package-dir (concat (file-name-directory user-init-file) "elpa"))
-
 (package-initialize)
+(defvar compyman/packages-refreshed nil
+  "Flag for whether package lists have been refreshed yet.")
+(defun compyman/package-refresh (&rest args)
+  "Refresh package metadata, if needed.
+Ignores `ARGS'."
+  (unless (eq compyman/packages-refreshed t)
+    (progn
+      (package-refresh-contents)
+      (setq genehaccompyman/packages-refreshed t))))
+(advice-add 'package-install :before #'compyman/package-refresh)
+
 (unless (file-exists-p package-dir)
   (make-directory package-dir))
 (setq package-user-dir package-dir)
@@ -52,7 +62,6 @@
         lsp-mode
         lsp-ui
         lsp-ivy
-        lsp-python-ms
         dap-mode
         smartparens
         prescient
@@ -67,7 +76,7 @@
   (normal-top-level-add-subdirs-to-load-path))
 
 ;; Font and frame size
-(set-face-font 'default "Fira Code Light 10")
+(set-face-font 'default "Fira Code Light 14")
 (setq default-frame-alist
       (append (list '(width  . 72) '(height . 40)
                     '(vertical-scroll-bars . nil)
@@ -198,11 +207,8 @@
     (require 'dap-python)
     (add-hook 'lsp-mode-hook #'dap-auto-configure-mode))
   (add-hook 'python-mode-hook #'lsp-deferred)
-  (require 'lsp-python-ms)
-      
   (setq gc-cons-threshold 100000000)
   (setq read-process-output-max (* 1024 1024)))
-;; 1mb
 
 (after "dart-mode-autoloads"
   (setq dart-format-on-save t)
@@ -264,10 +270,10 @@
    '("/usr/local/stow/guile-3/share/guile/" "/usr/local/stow/guile-3/share/guile/3.0"))
  '(global-display-line-numbers-mode t)
  '(indent-tabs-mode nil)
- '(lsp-python-ms-extra-paths ["src"])
+ '(lsp-pyls-server-command '("pylsp"))
  '(lsp-ui-flycheck-enable t)
  '(package-selected-packages
-   '(dired-sidebar use-package easy-kill crux ivy-prescient prescient smartparens dap-mode lsp-ivy lsp-python-ms solarized-theme ivy projectile counsel ein org ess-R-data-view ess haskell-mode lsp-mode lsp-ui rust-mode dash-alfred bicycle ace-window flycheck-yamllint yaml-mode geiser emojify tuareg flymake-jslint wc-mode ini-mode json-mode ace-jump-mode elpy atom-one-dark-theme markdown-mode go-eldoc powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex magit paredit hungry-delete flycheck-rust rainbow-delimiters))
+   '(dockerfile-mode ivy-mpdel mpdel geiser-guile dired-sidebar use-package easy-kill crux ivy-prescient prescient smartparens dap-mode lsp-ivy solarized-theme ivy projectile counsel ein org ess-R-data-view ess haskell-mode lsp-mode lsp-ui rust-mode dash-alfred bicycle ace-window flycheck-yamllint yaml-mode geiser emojify tuareg flymake-jslint wc-mode ini-mode json-mode ace-jump-mode elpy atom-one-dark-theme markdown-mode go-eldoc powerline go-mode avy atom-dark-theme moe-theme paradox slime exec-path-from-shell flycheck-color-mode-line undo-tree auctex magit paredit hungry-delete flycheck-rust rainbow-delimiters))
  '(paradox-execute-asynchronously t)
  '(paradox-github-token t)
  '(paradox-spinner-type 'moon)
@@ -301,4 +307,4 @@
 (projectile-mode +1)
 (define-key projectile-mode-map (kbd "s-p") 'projectile-command-map)
 (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
-(load-theme 'solarized-light-high-contrast)
+(load-theme 'solarized-dark-high-contrast)
