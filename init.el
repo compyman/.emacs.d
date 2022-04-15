@@ -4,6 +4,8 @@
 (when (fboundp 'menu-bar-mode) (menu-bar-mode -1))
 (when (fboundp 'tool-bar-mode) (tool-bar-mode -1))
 (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
+;; NEVER GARBAGE COLLECT
+(setq gc-cons-threshold 100000000)
 ;; quiet!!
 (setq ring-bell-function 'ignore)
 (when (eq system-type 'darwin)
@@ -49,7 +51,8 @@ Ignores `ARGS'."
 (mapc #'(lambda (package)
 	  (unless (package-installed-p package)
 	   (package-install package)))
-      '(elpy
+      '(async
+        solarized-theme
 	rainbow-delimiters
 	avy
 	exec-path-from-shell
@@ -77,7 +80,7 @@ Ignores `ARGS'."
         easy-kill
         dired-sidebar
         use-package))
-(setq use-package-verbose t)
+
 ;; Font and frame size
 (setq default-frame-alist
       (append (list '(width  . 72) '(height . 40)
@@ -107,6 +110,7 @@ Ignores `ARGS'."
 
 (use-package pyvenv
   :config (pyvenv-mode))
+
 ;;; Flycheck Mode
 (use-package flycheck
   :hook ((c-mode c++-mode go-mode js-mode)  . flycheck-mode)
@@ -117,7 +121,7 @@ Ignores `ARGS'."
   :hook (flycheck-mode . flycheck-color-mode-line-mode)
   :after (flycheck))
 
-
+;;; Counsel & Ivy
 (use-package counsel
   :custom
   (ivy-use-virtual-buffers t)
@@ -138,10 +142,7 @@ Ignores `ARGS'."
          ("C-x b" . 'ivy-switch-buffer)
          ("C-c v" . 'ivy-push-view)
          ("C-c V" . 'ivy-pop-view))
-  :after (ivy ivy-prescient))
-
-(use-package ivy)
-(use-package ivy-prescient)
+  :after (ivy ivy-prescient swiper))
 
 ;;;; in mac add shell path to emacs exec path
 (use-package exec-path-from-shell
@@ -203,7 +204,6 @@ Ignores `ARGS'."
 (use-package lsp-mode
   :custom
   (lsp-pyls-plugins-flake8-enabled t)
-  (gc-cons-threshold 100000000)
   (read-process-output-max (* 1024 1024))
   :hook (python-mode . lsp-deferred)
   :config
@@ -257,7 +257,7 @@ Ignores `ARGS'."
  '(auth-source-save-behavior nil)
  '(calendar-week-start-day 1)
  '(custom-safe-themes
-   '("7f1d414afda803f3244c6fb4c2c64bea44dac040ed3731ec9d75275b9e831fe5" "2809bcb77ad21312897b541134981282dc455ccd7c14d74cc333b6e549b824f3" "c433c87bd4b64b8ba9890e8ed64597ea0f8eb0396f4c9a9e01bd20a04d15d358" "00445e6f15d31e9afaa23ed0d765850e9cd5e929be5e8e63b114a3346236c44c" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "bffb799032a7404b33e431e6a1c46dc0ca62f54fdd20744a35a57c3f78586646" "21fb497b14820147b2b214e640b3c5ee19fcadc15bc288e3c16c9c9575d95d66" "2642a1b7f53b9bb34c7f1e032d2098c852811ec2881eec2dc8cc07be004e45a0" "76dc63684249227d64634c8f62326f3d40cdc60039c2064174a7e7a7a88b1587" "e9460a84d876da407d9e6accf9ceba453e2f86f8b86076f37c08ad155de8223c" "78496062ff095da640c6bb59711973c7c66f392e3ac0127e611221d541850de2" "6a23db7bccf6288fd7c80475dc35804c73f9c9769ad527306d2e0eada1f8b466" "6dd2b995238b4943431af56c5c9c0c825258c2de87b6c936ee88d6bb1e577cb9" "c620ce43a0b430dcc1b06850e0a84df4ae5141d698d71e17de85e7494377fd81" "a1289424bbc0e9f9877aa2c9a03c7dfd2835ea51d8781a0bf9e2415101f70a7e" "32e3693cd7610599c59997fee36a68e7dd34f21db312a13ff8c7e738675b6dfc" "8e5dd88c42089566d5f8e1a23d3017c213eeccd94a7b9e1a58a2dc3e08cb26d5" "685a7460fdc4b8c38796234d3a96b3aacbe4fba739fb33b5d6d149051ce74a58" default))
+   '("fee7287586b17efbfda432f05539b58e86e059e78006ce9237b8732fde991b4c" "4c56af497ddf0e30f65a7232a8ee21b3d62a8c332c6b268c81e9ea99b11da0d3" "7f1d414afda803f3244c6fb4c2c64bea44dac040ed3731ec9d75275b9e831fe5" "2809bcb77ad21312897b541134981282dc455ccd7c14d74cc333b6e549b824f3" "c433c87bd4b64b8ba9890e8ed64597ea0f8eb0396f4c9a9e01bd20a04d15d358" "00445e6f15d31e9afaa23ed0d765850e9cd5e929be5e8e63b114a3346236c44c" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "bffb799032a7404b33e431e6a1c46dc0ca62f54fdd20744a35a57c3f78586646" "21fb497b14820147b2b214e640b3c5ee19fcadc15bc288e3c16c9c9575d95d66" "2642a1b7f53b9bb34c7f1e032d2098c852811ec2881eec2dc8cc07be004e45a0" "76dc63684249227d64634c8f62326f3d40cdc60039c2064174a7e7a7a88b1587" "e9460a84d876da407d9e6accf9ceba453e2f86f8b86076f37c08ad155de8223c" "78496062ff095da640c6bb59711973c7c66f392e3ac0127e611221d541850de2" "6a23db7bccf6288fd7c80475dc35804c73f9c9769ad527306d2e0eada1f8b466" "6dd2b995238b4943431af56c5c9c0c825258c2de87b6c936ee88d6bb1e577cb9" "c620ce43a0b430dcc1b06850e0a84df4ae5141d698d71e17de85e7494377fd81" "a1289424bbc0e9f9877aa2c9a03c7dfd2835ea51d8781a0bf9e2415101f70a7e" "32e3693cd7610599c59997fee36a68e7dd34f21db312a13ff8c7e738675b6dfc" "8e5dd88c42089566d5f8e1a23d3017c213eeccd94a7b9e1a58a2dc3e08cb26d5" "685a7460fdc4b8c38796234d3a96b3aacbe4fba739fb33b5d6d149051ce74a58" default))
  '(fci-rule-color "#3E4451")
  '(flycheck-javascript-eslint-executable nil)
  '(global-display-line-numbers-mode t)
@@ -265,6 +265,8 @@ Ignores `ARGS'."
  '(indent-tabs-mode nil)
  '(lsp-pyls-server-command '("pylsp"))
  '(lsp-ui-flycheck-enable t)
+ '(package-selected-packages
+   '(solaraized-theme async solarized-theme use-package dired-sidebar easy-kill crux ivy-prescient prescient smartparens dap-mode counsel lsp-ivy lsp-ui lsp-mode projectile paradox flycheck-color-mode-line flycheck undo-tree auctex magit paredit go-eldoc exec-path-from-shell avy rainbow-delimiters elpy))
  '(paradox-execute-asynchronously t)
  '(paradox-github-token t)
  '(paradox-spinner-type 'moon)
