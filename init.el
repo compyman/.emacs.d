@@ -6,6 +6,7 @@
 (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
 ;; NEVER GARBAGE COLLECT
 (setq gc-cons-threshold 100000000)
+(setq read-process-output-max (* 3 1024 1024)) ;; 1mb
 ;; quiet!!
 (setq ring-bell-function 'ignore)
 (when (eq system-type 'darwin)
@@ -28,58 +29,61 @@
 ;; set auth-sources to use an encrypted file
 (setq auth-sources '((:source "~/.authinfo.gpg")))
 
-;;;; package.el
-(setq package-dir (concat (file-name-directory user-init-file) "elpa"))
-(package-initialize)
-(defvar compyman/packages-refreshed nil
-  "Flag for whether package lists have been refreshed yet.")
-(defun compyman/package-refresh (&rest args)
-  "Refresh package metadata, if needed.
-Ignores `ARGS'."
-  (unless (eq compyman/packages-refreshed t)
-    (progn
-      (package-refresh-contents)
-      (setq compyman/packages-refreshed t))))
-(advice-add 'package-install :before #'compyman/package-refresh)
-
-(unless (file-exists-p package-dir)
-  (make-directory package-dir))
-(setq package-user-dir package-dir)
+;; package.el
 (add-to-list 'package-archives
-	     '("melpa" . "https://melpa.org/packages/") t)
+             '("melpa" . "https://melpa.org/packages/") t)
+(use-package geiser-guile
+  :ensure
+  :custom (geiser-guile-load-init-file-p t))
+(use-package
+  geiser
+  :ensure)
 
-(mapc #'(lambda (package)
-	  (unless (package-installed-p package)
-	   (package-install package)))
-      '(async
-        solarized-theme
-	rainbow-delimiters
-	avy
-	exec-path-from-shell
-	go-eldoc
-	paredit
-	magit
-	auctex
-	undo-tree
-	flycheck
-	flycheck-color-mode-line
-	paradox
-        projectile
-        pyvenv
-        lsp-mode
-        lsp-ui
-        lsp-ivy
-        ivy
-        counsel
-        swiper
-        dap-mode
-        smartparens
-        prescient
-        ivy-prescient
-        crux
-        easy-kill
-        dired-sidebar
-        use-package))
+(use-package rustic
+  :ensure
+  :bind (:map rustic-mode-map
+              ("M-j" . lsp-ui-imenu)
+              ("M-?" . lsp-find-references)
+              ("C-c C-c l" . flycheck-list-errors)
+              ("C-c C-c a" . lsp-execute-code-action)
+              ("C-c C-c r" . lsp-rename)
+              ("C-c C-c q" . lsp-workspace-restart)
+              ("C-c C-c Q" . lsp-workspace-shutdown)
+              ("C-c C-c s" . lsp-rust-analyzer-status))
+  :config
+  ;; uncomment for less flashiness
+  ;; (setq lsp-eldoc-hook nil)
+  ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-signature-auto-activate nil)
+
+  ;; comment to disable rustfmt on save
+  (setq rustic-format-on-save t))
+
+(use-package which-key
+  :config (which-key-mode)
+  :ensure t)
+
+(use-package magit)
+
+(use-package hungry-delete
+  :config (global-hungry-delete-mode)
+  :custom (hungry-delete-join-reluctantlyis t)
+  :ensure t)
+
+(use-package async :ensure t)
+
+(use-package solarized-theme
+  :ensure t
+  :config
+  ;;; Apply Theme on system-appearance change
+  (defun my/apply-theme (appearance)
+    "Load theme, taking current system APPEARANCE into consideration."
+    (mapc #'disable-theme custom-enabled-themes)
+    (pcase appearance
+      ('light (load-theme 'solarized-light-high-contrast t))
+      ('dark (load-theme 'solarized-dark-high-contrast t))))
+  (add-hook 'ns-system-appearance-change-functions #'my/apply-theme))
+
 
 ;; Font and frame size
 (setq default-frame-alist
@@ -99,6 +103,9 @@ Ignores `ARGS'."
 ;;; show-paren-mode
 (setq show-paren-style 'parenthesis)
 (add-hook 'prog-mode-hook 'show-paren-mode)
+;;; Built in Emacs Lisp
+(add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+(add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
 
 ;;; Paredit Mode
 (use-package paredit
@@ -109,10 +116,14 @@ Ignores `ARGS'."
   :ensure auctex)
 
 (use-package pyvenv
-  :config (pyvenv-mode))
+  :ensure t
+  :custom
+  (pyvenv-virtualenvwrapper-python "~/.pyenv/versions/3.8.12/bin/python")
+  :config (pyvenv-mode 1))
 
 ;;; Flycheck Mode
 (use-package flycheck
+  :ensure
   :hook ((c-mode c++-mode go-mode js-mode)  . flycheck-mode)
   :custom
   (flycheck-clang-language-standard "c++11"))
@@ -123,6 +134,7 @@ Ignores `ARGS'."
 
 ;;; Counsel & Ivy
 (use-package counsel
+  :ensure t
   :custom
   (ivy-use-virtual-buffers t)
   (ivy-count-format "(%d/%d) ")
@@ -143,33 +155,75 @@ Ignores `ARGS'."
          ("C-c v" . 'ivy-push-view)
          ("C-c V" . 'ivy-pop-view))
   :after (ivy ivy-prescient swiper))
+(use-package ivy
+  :ensure t)
+
+(use-package prescient
+  :ensure t)
+
+(use-package ivy-prescient
+  :ensure t
+  :after (prescient))
+
+(use-package swiper
+  :ensure t)
 
 ;;;; in mac add shell path to emacs exec path
 (use-package exec-path-from-shell
   :if (eq system-type 'darwin)
-  :ensure t
+  :custom
+  ;(exec-path-from-shell-arguments '("--login" "-c"))
+  (exec-path-from-shell-name "zsh")
+  (exec-path-from-shell-variables '("LANG"
+                                    "PATH" "MANPATH"
+                                    "LDFLAGS" "CPPFLAGS" "PKG_CONFIG_PATH"
+                                    "GITHUB_TOKEN"
+                                    "CIRCLECI_TOKEN"
+                                    "DATADOG_TOKEN"
+                                    "SENDWAVE_HOST" "WAVE_URL_ROOT" "PLUGIN_URL_ROOT"
+                                    "MYPYCACHEDIR"
+                                    "PYTHONPYCACHEPREFIX"
+                                    "PYENV_ROOT"
+                                    "PYENV_SHELL"
+                                    "PYENV_VIRTUALENV_INIT"
+                                    "WORKON_HOME"
+                                    "VIRTUALENVWRAPPER_PROJECT_FILENAME"
+                                    "VIRTUALENVWRAPPER_ENV_BIN_DIR"
+                                    "PYENV_VIRTUALENVWRAPPER_PYENV_VERSION"
+                                    "VIRTUALENVWRAPPER_PROJECT_CD"
+                                    "VIRTUALENVWRAPPER_PYTHON"
+                                    "VIRTUALENVWRAPPER_VIRTUALENV"
+                                    "VIRTUALENVWRAPPER_VIRTUALENV_CLONE"
+                                    "VIRTUALENVWRAPPER_SCRIPT"
+                                    "VIRTUALENVWRAPPER_LAZY_SCRIPT"
+                                    "_VIRTUALENVWRAPPER_API"
+                                    "VIRTUALENVWRAPPER_HOOK_DIR"
+                                    "VIRTUAL_ENV_DISABLE_PROMPT"
+                                    ))
   :config (exec-path-from-shell-initialize))
 
 (use-package company
   :config
   (global-company-mode)
   :custom
-  (company-idle-delay 0.2)
-  (company-minimum-prefix-length 1)
-  (company-tooltip-align-annotations t))
+  (company-idle-delay 0.0)
+  (company-minimum-prefix-length 1))
 
 ;;;;Org-mode
 (define-key global-map (kbd  "C-c l") 'org-store-link)
 (define-key global-map (kbd "C-c a") 'org-agenda)
 (setq org-agenda-files (list "~/org/work-agenda.org"))
 (setq org-log-done t)
-
+;;;;
+(use-package doom-modeline
+  :ensure t
+  :config (doom-modeline-mode 1))
 ;;;;Undo Tree Mode
+
 (use-package undo-tree
   :custom
+  (undo-tree-visualizer-lazy-drawing 't)
   (undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo")))
-  (undo-tree-visualizer-relative-timestamps t)
-  (undo-tree-visualizer-timestamps t)
   :config
   (global-undo-tree-mode t))
 
@@ -180,57 +234,116 @@ Ignores `ARGS'."
 ;;; LSP UI Mode
 (use-package lsp-ui
   :hook (lsp-mode . lsp-ui-mode)
+  :ensure t
   :custom
+  (lsp-ui-peek-always-show t)
   (lsp-ui-sideline-show-hover t)
-  (lsp-ui-sideline-delay 0.5)
-  (lsp-ui-doc-delay 2)
-  (lsp-ui-sideline-ignore-duplicates t)
-  (lsp-ui-doc-position 'bottom)
-  (lsp-ui-doc-alignment 'frame)
-  (lsp-ui-doc-header nil)
   (lsp-ui-doc-include-signature t)
   (lsp-ui-doc-use-childframe t)
+  (lsp-ui-sideline-show-code-actions nil)
   :after (lsp-mode))
 
 ;;; LSP Ivy integration
 (use-package lsp-ivy
   :config
+  :ensure t
   (define-key lsp-mode-map
               [remap xref-find-apropos]
               #'lsp-ivy-workspace-symbol)
   :after (lsp-mode))
 
 ;;; LSP Mode
+(use-package yasnippet
+  :ensure t
+  :config
+  (yas-reload-all)
+  (add-hook 'prog-mode-hook 'yas-minor-mode)
+  (add-hook 'text-mode-hook 'yas-minor-mode))
+
+
+(use-package yasnippet-snippets :ensure t)
+
 (use-package lsp-mode
+  :bind ("M-j" . lsp-ui-imenu)
+  :ensure t
   :custom
-  (lsp-pyls-plugins-flake8-enabled t)
+  ; (lsp-pyls-plugins-flake8-enabled nil)
+  ; (lsp-pylsp-plugins-mccabe-enabled nil)
+  ; (lsp-pylsp-plugins-pyflakes-enabled nil)
+  ; (lsp-pylsp-plugins-pylint-enabled nil)
+  (lsp-rust-analyzer-cargo-watch-command "clippy")
+  (lsp-eldoc-render-all t)
+
+    ;; what to use when checking on-save. "check" is default, I prefer clippy
+  (lsp-rust-analyzer-cargo-watch-command "clippy")
+  (lsp-eldoc-render-all t)
+  (lsp-idle-delay 0.6)
+  ;; enable / disable the hints as you prefer:
+  (lsp-rust-analyzer-server-display-inlay-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-enable "skip_trivial")
+  (lsp-rust-analyzer-display-chaining-hints t)
+  (lsp-rust-analyzer-display-lifetime-elision-hints-use-parameter-names nil)
+  (lsp-rust-analyzer-display-closure-return-type-hints t)
+  (lsp-rust-analyzer-display-parameter-hints nil)
+  (lsp-rust-analyzer-display-reborrow-hints nil)
   (read-process-output-max (* 1024 1024))
-  :hook (python-mode . lsp-deferred)
+  (lsp-keymap-prefix "M-l")
+  (lsp-modeline-diagnostics-mode t)
+  :hook
+  (python-mode . lsp-deferred)
+  (lsp-mode . lsp-enable-which-key-integration)
   :config
   (lsp-register-custom-settings
    '(("pylsp.plugins.pylsp_mypy.enabled" t t)
-     ("pylsp.plugins.pylsp_mypy.live_mode" nil t)
+     ("pylsp.plugins.pylsp_mypy.live_mode" t t)
      ("pylsp.plugins.pylsp_black.enabled" t t)
-     ("pylsp.plugins.pyls_isort.enabled" t t)
-       ;; Disable these as they're duplicated by flake8
-     ("pylsp.plugins.pycodestyle.enabled" nil t)
-     ("pylsp.plugins.mccabe.enabled" nil t)
-     ("pylsp.plugins.pyflakes.enabled" nil t))))
+     ("pylsp.plugins.pyls_isort.enabled" t t))))
 
 
+;;; Debug Adaptor Protocol Mode
+(use-package dap-mode
+  :ensure t
+  :custom (dap-python-debugger 'debugpy)
+  :config
+  (require 'dap-python)
+  (defun dap-python--pyenv-executable-find (command)
+    (executable-find command)))
 
+;;; Handy CRUX addons
+(use-package crux
+  :ensure t
+  :bind (("C-c o" . crux-open-with)
+         ("s-r" . crux-recentf-find-file)
+         ("C-c k" . crux-kill-other-buffers)
+         ("C-c n" . crux-cleanup-buffer-or-region)
+         ([remap move-beginning-of-line] . crux-move-beginning-of-line)
+         ([remap kill-whole-line] . crux-kill-whole-line)
+         ([(shift return)] . crux-smart-open-line))
+  :config
+  (crux-reopen-as-root-mode)
+  (crux-with-region-or-buffer indent-region)
+  (crux-with-region-or-buffer untabify)
+  (crux-with-region-or-line comment-or-uncomment-region))
 
+(use-package easy-kill
+  :bind ([remap kill-ring-save] . easy-kill)
+  :defer 1)
 
 ;;; paradox
-(use-package paradox
-  :config (paradox-enable))
+;; (use-package paradox
+;;   :ensure t
+;;   :config (paradox-enable))
+
 ;;; smartparens
 (use-package smartparens
+  :ensure t
   :hook (python-mode . smartparens-strict-mode)
-  :config (require 'smartparens-config))
+  :config
+  (require 'smartparens-config))
 
 ;;; projectile mode
 (use-package projectile
+  :ensure t
   :config (projectile-mode +1)
   :bind (
          :map projectile-mode-map
@@ -238,15 +351,6 @@ Ignores `ARGS'."
               ("C-c p" . projectile-command-map)))
 
 
-;;; Apply Theme
-(defun my/apply-theme (appearance)
-  "Load theme, taking current system APPEARANCE into consideration."
-  (mapc #'disable-theme custom-enabled-themes)
-  (pcase appearance
-    ('light (load-theme 'solarized-light-high-contrast t))
-    ('dark (load-theme 'solarized-dark-high-contrast t))))
-
-(add-hook 'ns-system-appearance-change-functions #'my/apply-theme)
 
 ; END OF USER CONFIG
 (custom-set-variables
@@ -266,7 +370,7 @@ Ignores `ARGS'."
  '(lsp-pyls-server-command '("pylsp"))
  '(lsp-ui-flycheck-enable t)
  '(package-selected-packages
-   '(solaraized-theme async solarized-theme use-package dired-sidebar easy-kill crux ivy-prescient prescient smartparens dap-mode counsel lsp-ivy lsp-ui lsp-mode projectile paradox flycheck-color-mode-line flycheck undo-tree auctex magit paredit go-eldoc exec-path-from-shell avy rainbow-delimiters elpy))
+   '(geiser-guile geiser yasnippet-snippets yassnippet-snippets rustic yaml-mode bazel doom-modeline cask-mode cask pyvenv which-key with-venv hungry-delete python-mode solaraized-theme async solarized-theme use-package dired-sidebar easy-kill crux ivy-prescient prescient smartparens dap-mode counsel lsp-ivy lsp-ui lsp-mode projectile paradox flycheck-color-mode-line flycheck undo-tree auctex magit paredit go-eldoc exec-path-from-shell avy rainbow-delimiters elpy))
  '(paradox-execute-asynchronously t)
  '(paradox-github-token t)
  '(paradox-spinner-type 'moon)
@@ -274,7 +378,8 @@ Ignores `ARGS'."
  '(python-shell-interpreter-args "\"console --simple-prompt\"")
  '(python-shell-prompt-detect-failure-warning nil)
  '(safe-local-variable-values
-   '((pyvenv-workon . remit)
+   '((checkdoc-minor-mode . t)
+     (pyvenv-workon . remit)
      (pyvenv-workon . "frontplugin")
      (major-mode . yaml-mode)
      (pyvenv-workon . "remit3610")
@@ -285,7 +390,8 @@ Ignores `ARGS'."
  '(show-paren-mode t)
  '(tool-bar-mode nil)
  '(undo-tree-visualizer-diff t)
- '(undo-tree-visualizer-timestamps t))
+ '(warning-suppress-log-types '((use-package) (use-package)))
+ '(warning-suppress-types '((use-package))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
