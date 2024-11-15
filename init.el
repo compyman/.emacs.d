@@ -5,7 +5,6 @@
 ;;; (when (fboundp 'tool-bar-mode) (tool-bar-mode -1))
 (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
 ;; NEVER GARBAGE COLLECT
-
 (setq read-process-output-max (* 3 1024 1024)) ;; 1mb
 ;; quiet!!
 (setq ring-bell-function 'ignore)
@@ -34,36 +33,27 @@
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/")
              '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
+
+(use-package eglot
+  :custom (eglot-report-progress nil)
+  )
+
+
 (use-package geiser-guile
   :ensure t
   :custom (geiser-guile-load-init-file-p t))
 (use-package geiser :ensure t)
+
 (use-package direnv
   :ensure t
   :config
   (direnv-mode))
-(use-package rustic
-  :ensure t
-  :bind (:map rustic-mode-map
-              ("M-j" . lsp-ui-imenu)
-              ("M-?" . lsp-find-references)
-              ("C-c C-c l" . flycheck-list-errors)
-              ("C-c C-c a" . lsp-execute-code-action)
-              ("C-c C-c r" . lsp-rename)
-              ("C-c C-c q" . lsp-workspace-restart)
-              ("C-c C-c Q" . lsp-workspace-shutdown)
-              ("C-c C-c s" . lsp-rust-analyzer-status))
-  :config
-  (setq rustic-format-on-save t))
-
-
 
 (use-package which-key
   :config (which-key-mode)
   :ensure t)
 
-(use-package magit
-  :ensure t)
+(use-package magit  :ensure t)
 
 (use-package hungry-delete
   :config (global-hungry-delete-mode)
@@ -71,18 +61,6 @@
   :ensure t)
 
 (use-package async :ensure t)
-
-(use-package solarized-theme
-  :ensure t
-  :config
-  ;;; Apply Theme on system-appearance change
-  (defun my/apply-theme (appearance)
-    "Load theme, taking current system APPEARANCE into consideration."
-    (mapc #'disable-theme custom-enabled-themes)
-    (pcase appearance
-      ('light (load-theme 'solarized-light-high-contrast t))
-      ('dark (load-theme 'solarized-dark-high-contrast t))))
-  (add-hook 'ns-system-appearance-change-functions #'my/apply-theme))
 
 
 ;; Font and frame size
@@ -98,13 +76,15 @@
 
 ;; kotlin IDE
 (use-package kotlin-mode
-  :after (lsp-mode dap-mode)
+  :after (dap-mode)
   :config
   (require 'dap-kotlin)
   ;; should probably have been in dap-kotlin instead of lsp-kotlin
   (setq lsp-kotlin-debug-adapter-path (or (executable-find "kotlin-debug-adapter") ""))
   :hook
   (kotlin-mode . lsp))
+
+
 (use-package ligature
   :ensure t
   :config
@@ -122,23 +102,36 @@
   (global-ligature-mode 't))
 
 
-;;; rainbow-delimiters
-(use-package rainbow-delimiters
-  :hook ((scheme-mode emacs-mode) . rainbow-delimiters-mode))
-
 ;;; prog minor modes
 (add-hook 'prog-mode-hook 'global-display-line-numbers-mode)
+(add-hook 'prog-mode-hook 'eldoc-mode)
 ;;; show-paren-mode
 (setq show-paren-style 'parenthesis)
 (add-hook 'prog-mode-hook 'show-paren-mode)
 ;;; Built in Emacs Lisp
-(add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (add-hook 'lisp-interaction-mode-hook 'eldoc-mode)
 
+(use-package eldoc
+  :hook ((prog-mode-hook lisp-interaction-mode-hook) . eldoc-mode)
+  )
+
+(use-package flymake
+  :hook ((prog-mode-hook) . eldoc-mode)
+  :bind (
+         :map flymake-mode-map
+         ("M-n" . 'flymake-goto-prev-error)
+         ("M-p" . 'flymake-goto-next-error)))
+
+
+;;UNDO TREE
+
+(use-package undo-tree
+  :ensure t
+  :init (global-undo-tree-mode))
 ;;; Paredit Mode
 (use-package paredit
   :ensure t
-  :hook ((scheme-mode emacs-lisp-mode) . enable-paredit-mode))
+  :hook ((scheme-mode emacs-lisp-mode lisp-data-mode) . enable-paredit-mode))
 
 ;;; Auctex Mode
 (use-package tex
@@ -150,57 +143,10 @@
   (pyvenv-virtualenvwrapper-python "~/.pyenv/versions/3.11.6/bin/python")
   :config (pyvenv-mode 1))
 
-;;; Flycheck Mode
-(use-package flycheck
-  :ensure t
-  :hook ((c-mode c++-mode go-mode js-mode)  . flycheck-mode)
-  :custom
-  (flycheck-clang-language-standard "c++11"))
-
-(use-package flycheck-color-mode-line
-  :ensure t
-  :hook (flycheck-mode . flycheck-color-mode-line-mode)
-  :after (flycheck))
-
-;; Counsel & Ivy
-;; (use-package counsel
-;;   :ensure t
-;;   :custom
-;;   (ivy-use-virtual-buffers t)
-;;   (ivy-count-format "(%d/%d) ")
-;;   :config
-;;   (ivy-mode 1)
-;;   (ivy-prescient-mode)
-;;   :bind (("C-s" .  'swiper-isearch)
-;;          ("M-x" .  'counsel-M-x)
-;;          ("C-x C-f" . 'counsel-find-file)
-;;          ("M-y" . 'counsel-yank-pop)
-;;          ("<f1> f" . 'counsel-describe-function)
-;;          ("<f1> v" . 'counsel-describe-variable)
-;;          ("<f1> l" . 'counsel-find-library)
-;;          ("<f2> i" . 'counsel-info-lookup-symbol)
-;;          ("<f2> u" . 'counsel-unicode-char)
-;;          ("<f2> j" . 'counsel-set-variable)
-;;          ("C-x b" . 'ivy-switch-buffer)
-;;          ("C-c v" . 'ivy-push-view)
-;;          ("C-c V" . 'ivy-pop-view))
-;;   :after (ivy ivy-prescient swiper))
-;; (use-package ivy
-;;   :ensure t)
-
-;; (use-package prescient
-;;   :ensure t)
-
-;; (use-package ivy-prescient
-;;   :ensure t
-;;   :after (prescient))
-
-;; (use-package swiper
-;;   :ensure t)
-
 
 ;;;; in mac add shell path to emacs exec path
 (use-package exec-path-from-shell
+  :ensure t
   :if (eq system-type 'darwin)
   :custom
   (exec-path-from-shell-name "zsh")
@@ -232,14 +178,6 @@
                                     ))
   :config (exec-path-from-shell-initialize))
 
-(use-package company
-  :ensure t
-  :config
-  (global-company-mode)
-  :custom
-  (company-idle-delay 0.0)
-  (company-minimum-prefix-length 1))
-
 ;;;;Org-mode
 (define-key global-map (kbd  "C-c l") 'org-store-link)
 (define-key global-map (kbd "C-c a") 'org-agenda)
@@ -248,24 +186,57 @@
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((shell . t)))
-;;;;
+
+;;flymake
+
+
+;; DOOM
+
+(use-package nerd-icons
+  :ensure t
+  ;; :custom
+  ;; The Nerd Font you want to use in GUI
+  ;; "Symbols Nerd Font Mono" is the default and is recommended
+  ;; but you can use any other Nerd Font if you want
+  :config
+  (setq nerd-icons-font-family "DejaVuSansM Nerd Font Mono")
+  )
+
+(use-package doom-themes
+  :ensure t
+  :config
+  ;; Global settings (defaults)
+  (setq doom-themes-enable-bold t ; if nil, bold is universally disabled
+        doom-themes-enable-italic t) ; if nil, italics is universally disabled
+  (load-theme 'doom-tokyo-night t)
+  (defun my/apply-theme (appearance)
+    "Load theme, taking current system APPEARANCE into consideration."
+    (mapc #'disable-theme custom-enabled-themes)
+    (pcase appearance
+      ('light (load-theme 'doom-solarized-light t))
+      ('dark (load-theme 'doom-tokyo-night t))))
+   (add-hook 'ns-system-appearance-change-functions #'my/apply-theme)
+
+  ;; Enable flashing mode-line on errors
+  (doom-themes-visual-bell-config)
+  (doom-themes-org-config))
+
 (use-package doom-modeline
   :ensure t
   :config (doom-modeline-mode 1))
+
+
 
 (use-package treesit-auto
   :ensure t
   :config
   (treesit-auto-add-to-auto-mode-alist 'all))
 
-
-
 ;;; Avy Mode
 (use-package avy
   :ensure t
   :bind (("C-;" .  'avy-goto-word-or-subword-1)) )
 
-;;; LSP Mode
 (use-package yasnippet
   :ensure t
   :config
@@ -273,59 +244,17 @@
   (add-hook 'prog-mode-hook 'yas-minor-mode)
   (add-hook 'text-mode-hook 'yas-minor-mode))
 
-
 (use-package yasnippet-snippets :ensure t)
 
 
-
-  ;;LSP UI Mode
-(use-package lsp-ui
-  :hook (lsp-mode . lsp-ui-mode)
-  :ensure t
-  :custom
-  (lsp-ui-flycheck-enable t)
-  (lsp-ui-peek-always-show t)
-  (lsp-ui-sideline-show-hover t)
-  (lsp-ui-doc-include-signature t)
-  (lsp-ui-doc-use-childframe t)
-  (lsp-ui-sideline-show-code-actions nil)
-  :after (lsp-mode))
-
-;;  LSP Ivy integration
-(use-package lsp-ivy
-  :ensure t
-  :config
-  (define-key lsp-mode-map
-              [remap xref-find-apropos]
-              #'lsp-ivy-workspace-symbol)
-  :after (lsp-mode))
-
-
-
- (use-package lsp-mode
-   :bind ("M-j" . lsp-ui-imenu)
-   :ensure t
-   :custom
-   (lsp-rust-analyzer-cargo-watch-command "clippy")
-   (lsp-eldoc-render-all t)
-   (lsp-idle-delay 0.6)
-   (read-process-output-max (* 1024 1024))
-   (lsp-keymap-prefix "M-l")
-   (lsp-modeline-diagnostics-mode t)
-   (lsp-signature-auto-activate nil)
-   :hook
-   ((python-ts-mode . lsp)
-    (lsp-mode . lsp-enable-which-key-integration)))
-
-
 ;;  Debug Adaptor Protocol Mode
- (use-package dap-mode
-   :ensure t
-   :custom (dap-python-debugger 'debugpy)
-   :config
-   (require 'dap-python)
-   (defun dap-python--pyenv-executable-find (command)
-     (executable-find command)))
+(use-package dap-mode
+  :ensure t
+  :custom (dap-python-debugger 'debugpy)
+  :config
+  (require 'dap-python)
+  (defun dap-python--pyenv-executable-find (command)
+    (executable-find command)))
 
 
 ;;; Handy CRUX addons
@@ -355,6 +284,7 @@
   (require 'smartparens-config))
 
 (use-package terraform-mode
+  :ensure t
   :defer t
   :mode ("\\.tf\\'"))
 
@@ -368,15 +298,16 @@
               ("C-c p" . projectile-command-map)))
 
 
-(use-package vertico
-  :ensure t
-  :init (vertico-mode))
-
 ;; Persist history over Emacs restarts. Vertico sorts by history position.
 (use-package savehist
   :ensure t
   :init
   (savehist-mode))
+
+(use-package vertico
+  :ensure t
+  :init (vertico-mode))
+
 
 ;; Enable rich annotations using the Marginalia package
 (use-package marginalia
@@ -515,6 +446,9 @@
 
 ;; A few more useful configurations...
 (use-package emacs
+)
+
+(use-package emacs
   :init
   ;; Add prompt indicator to `completing-read-multiple'.
   ;; We display [CRM<separator>], e.g., [CRM,] if the separator is a comma.
@@ -526,16 +460,35 @@
                   (car args))
           (cdr args)))
   (advice-add #'completing-read-multiple :filter-args #'crm-indicator)
-
-  ;; Do not allow the cursor in the minibuffer prompt
-  (setq minibuffer-prompt-properties
-        '(read-only t cursor-intangible t face minibuffer-prompt))
   (add-hook 'minibuffer-setup-hook #'cursor-intangible-mode)
 
   ;; Emacs 28 and newer: Hide commands in M-x which do not work in the current
   ;; mode.  Vertico commands are hidden in normal buffers. This setting is
   ;; useful beyond Vertico.
-  (setq read-extended-command-predicate #'command-completion-default-include-p))
+
+  :custom
+  ;; Do not allow the cursor in the minibuffer prompt
+  (minibuffer-prompt-properties
+   '(read-only t cursor-intangible t face minibuffer-prompt))
+  ;; TAB cycle if there are only few candidates
+  (read-extended-command-predicate #'command-completion-default-include-p)
+  (completion-cycle-threshold 3)
+
+  ;; Enable indentation+completion using the TAB key.
+  ;; `completion-at-point' is often bound to M-TAB.
+  (tab-always-indent 'complete)
+
+  ;; Emacs 30 and newer: Disable Ispell completion function.
+  ;; Try `cape-dict' as an alternative.
+  (text-mode-ispell-word-completion nil)
+
+  ;; Hide commands in M-x which do not apply to the current mode.  Corfu
+  ;; commands are hidden, since they are not used via M-x. This setting is
+  ;; useful beyond Corfu.
+  (read-extended-command-predicate #'command-completion-default-include-p)
+)
+
+
 
 ;; Optionally use the `orderless' completion style.
 (use-package orderless
@@ -549,12 +502,29 @@
         completion-category-overrides '((file (styles partial-completion)))))
 
 
-(use-package aphelia
-  :ensure t
-  :config (aphelia-global-mode +1))
+(use-package corfu
+  ;; Optional customizations
+  :custom
+  (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+  (corfu-auto t)                 ;; Enable auto completion
+  (corfu-quit-at-boundary nil)   ;; Never quit at completion boundary
+  ;; (corfu-preview-current nil)    ;; Disable current candidate preview
+  ;; (corfu-preselect 'prompt)      ;; Preselect the prompt
+  ;; (corfu-on-exact-match nil)     ;; Configure handling of exact matches
 
+  ;; Enable Corfu only for certain modes. See also `global-corfu-modes'.
+  ;; :hook ((prog-mode . corfu-mode)
+  ;;        (shell-mode . corfu-mode)
+  ;;        (eshell-mode . corfu-mode))
 
-                                        ; END OF USER CONFIG
+  ;; Recommended: Enable Corfu globally.  This is recommended since Dabbrev can
+  ;; be used globally (M-/).  See also the customization variable
+  ;; `global-corfu-modes' to exclude certain modes.
+  :init
+  (global-corfu-mode))
+
+;; A few more useful configurations...
+					; END OF USER CONFIG
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -647,22 +617,16 @@
      (tramp-connection-local-default-system-profile
       (path-separator . ":")
       (null-device . "/dev/null"))))
+ '(corfu-quit-no-match t)
  '(custom-safe-themes
-   '("524fa911b70d6b94d71585c9f0c5966fe85fb3a9ddd635362bfabd1a7981a307" "fee7287586b17efbfda432f05539b58e86e059e78006ce9237b8732fde991b4c" "4c56af497ddf0e30f65a7232a8ee21b3d62a8c332c6b268c81e9ea99b11da0d3" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
+   '("4594d6b9753691142f02e67b8eb0fda7d12f6cc9f1299a49b819312d6addad1d" "ffafb0e9f63935183713b204c11d22225008559fa62133a69848835f4f4a758c" "7964b513f8a2bb14803e717e0ac0123f100fb92160dcf4a467f530868ebaae3e" "524fa911b70d6b94d71585c9f0c5966fe85fb3a9ddd635362bfabd1a7981a307" "fee7287586b17efbfda432f05539b58e86e059e78006ce9237b8732fde991b4c" "4c56af497ddf0e30f65a7232a8ee21b3d62a8c332c6b268c81e9ea99b11da0d3" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
  '(fci-rule-color "#3E4451")
  '(geiser-guile-load-init-file t nil nil "Customized with use-package geiser-guile")
  '(global-display-line-numbers-mode t)
  '(indent-tabs-mode nil)
- '(lsp-disabled-clients '(pyls))
- '(lsp-document-sync-method nil)
- '(lsp-pylsp-plugins-black-enabled t)
- '(lsp-pylsp-plugins-isort-enabled t)
  '(org-export-backends '(ascii html icalendar latex md odt))
  '(package-selected-packages
-   '(aphelia ox-clip treesit-auto kotlin-mode direnv org consult marginalia orderless vertico terraform-doc helm jinja2-mode web-mode lsp-docker terraform-mode teraform-mode doom-themes geiser-guile yassnippet-snippets rustic yaml-mode bazel doom-modeline cask-mode cask pyvenv which-key with-venv hungry-delete python-ts-mode solaraized-theme async solarized-theme use-package dired-sidebar easy-kill crux smartparens dap-mode counsel paradox flycheck-color-mode-line flycheck auctex magit paredit go-eldoc exec-path-from-shell avy rainbow-delimiters elpy))
- '(python-shell-interpreter "jupyter")
- '(python-shell-interpreter-args "\"console --simple-prompt\"")
- '(python-shell-prompt-detect-failure-warning nil)
+   '(undo-tree yasnippet-snippets which-key vertico treesit-auto terraform-mode smartparens pyvenv projectile paredit orderless marginalia magit lsp-ivy ligature hungry-delete geiser-guile exec-path-from-shell doom-themes doom-modeline direnv dap-mode crux corfu consult auctex async))
  '(safe-local-variable-values
    '((pyvenv-workon . remit-ide)
      (checkdoc-minor-mode . t)
