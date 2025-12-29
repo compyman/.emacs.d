@@ -33,10 +33,39 @@
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/")
              '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
-
 (use-package eglot
-  :custom (eglot-report-progress nil)
+  :custom
+  (eglot-report-progress t)
+  (eglot-autoshutdown t)
+  (eglot-connect-timeout nil)
+  (eglot-extend-to-xref t)
+  (eglot-sync-connect 5)
+  :config
+  (add-to-list
+   'eglot-server-programs
+   '((python-ts-mode python-mode) . ("uv" "tool" "run" "--with" "python-lsp-ruff" "--from" "python-lsp-server" "pylsp")))
+  (add-to-list
+   'eglot-server-programs
+   '((kotlin-ts-mode kotlin-mode). ("bash" "/opt/homebrew/Cellar/kotlin-lsp/0.253.10629/libexec/kotlin-lsp.sh" "--stdio")))
   )
+
+(use-package copilot
+  :ensure t)
+(use-package copilot-chat :ensure t)
+
+(define-key global-map (kbd "C-z") (make-sparse-keymap))
+
+(use-package eca :ensure t)
+(use-package mcp
+  :ensure t
+  :custom (mcp-hub-servers
+           '(("rovo" . (:command "npx"
+                        :args ("-y" "mcp-remote" "https://mcp.atlassian.com/v1/sse"))))))
+
+
+
+
+
 
 
 (use-package geiser-guile
@@ -71,18 +100,16 @@
                     '(font . "Fira Code 10")
                     )))
 
-(setq split-width-threshold 1280)
-(setq split-height-threshold 800)
 
-;; kotlin IDE
-(use-package kotlin-mode
-  :after (dap-mode)
-  :config
-  (require 'dap-kotlin)
-  ;; should probably have been in dap-kotlin instead of lsp-kotlin
-  (setq lsp-kotlin-debug-adapter-path (or (executable-find "kotlin-debug-adapter") ""))
-  :hook
-  (kotlin-mode . lsp))
+;; ;; kotlin IDE
+;; (use-package kotlin-mode
+;;   :after (dap-mode)
+;;   :config
+;;   (require 'dap-kotlin)
+;;   ;; should probably have been in dap-kotlin instead of lsp-kotlin
+;;   (setq lsp-kotlin-debug-adapter-path (or (executable-find "kotlin-debug-adapter") ""))
+;;   :hook
+;;   (kotlin-mode . lsp))
 
 
 (use-package ligature
@@ -127,7 +154,9 @@
 
 (use-package undo-tree
   :ensure t
-  :init (global-undo-tree-mode))
+  :init (global-undo-tree-mode)
+  :custom
+  (undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo"))))
 ;;; Paredit Mode
 (use-package paredit
   :ensure t
@@ -181,7 +210,10 @@
 ;;;;Org-mode
 (define-key global-map (kbd  "C-c l") 'org-store-link)
 (define-key global-map (kbd "C-c a") 'org-agenda)
-(setq org-agenda-files (list "~/org/work-agenda.org" "~/.notes"))
+(define-key global-map (kbd "C-c c") 'org-capture)
+(setq org-capture-templates
+      '(("S" "Standup" item (file+olp+datetree "~/org/work-agenda.org" "Standup"))))
+(setq org-agenda-files (list "~/org/" "~/.notes"))
 (setq org-log-done t)
 (org-babel-do-load-languages
  'org-babel-load-languages
@@ -237,6 +269,10 @@
   :ensure t
   :bind (("C-;" .  'avy-goto-word-or-subword-1)) )
 
+;;; ace window
+(use-package ace-window
+  :ensure t)
+
 (use-package yasnippet
   :ensure t
   :config
@@ -248,13 +284,12 @@
 
 
 ;;  Debug Adaptor Protocol Mode
-(use-package dap-mode
-  :ensure t
-  :custom (dap-python-debugger 'debugpy)
-  :config
-  (require 'dap-python)
-  (defun dap-python--pyenv-executable-find (command)
-    (executable-find command)))
+;; (use-package dap-mode
+;;   :custom (dap-python-debugger 'debugpy)
+;;   :config
+;;   (require 'dap-python)
+;;   (defun dap-python--pyenv-executable-find (command)
+;;     (executable-find command)))
 
 
 ;;; Handy CRUX addons
@@ -445,8 +480,6 @@
 
 
 ;; A few more useful configurations...
-(use-package emacs
-)
 
 (use-package emacs
   :init
@@ -524,6 +557,22 @@
   (global-corfu-mode))
 
 ;; A few more useful configurations...
+
+;; tramp config
+(connection-local-set-profile-variables
+ 'remote-direct-async-process
+ '((tramp-direct-async-process . t)))
+
+(connection-local-set-profiles
+ '(:application tramp :machine "server")
+ 'remote-direct-async-process)
+
+(setq magit-tramp-pipe-stty-settings 'pty)
+(with-eval-after-load 'tramp
+  (with-eval-after-load 'compile
+    (remove-hook 'compilation-mode-hook #'tramp-compile-disable-ssh-controlmaster-options)))
+
+
 					; END OF USER CONFIG
 
 (custom-set-variables
@@ -534,110 +583,120 @@
  '(auth-source-save-behavior nil)
  '(calendar-week-start-day 1)
  '(connection-local-criteria-alist
-   '(((:application eshell)
-      eshell-connection-default-profile)
+   '(((:application vc-git) vc-git-connection-default-profile)
+     ((:application eshell) eshell-connection-default-profile)
      ((:application tramp :machine "localhost")
       tramp-connection-local-darwin-ps-profile)
-     ((:application tramp :machine "Nathan-Rosenbloom-XPW326CYG0-SW.local")
+     ((:application tramp :machine
+                    "Nathan-Rosenbloom-XPW326CYG0-SW.local")
       tramp-connection-local-darwin-ps-profile)
      ((:application tramp)
-      tramp-connection-local-default-system-profile tramp-connection-local-default-shell-profile)))
+      tramp-connection-local-default-system-profile
+      tramp-connection-local-default-shell-profile)))
  '(connection-local-profile-alist
-   '((eshell-connection-default-profile
-      (eshell-path-env-list))
+   '((vc-git-connection-default-profile (vc-git--program-version))
+     (eshell-connection-default-profile (eshell-path-env-list))
      (tramp-connection-local-darwin-ps-profile
-      (tramp-process-attributes-ps-args "-acxww" "-o" "pid,uid,user,gid,comm=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" "-o" "state=abcde" "-o" "ppid,pgid,sess,tty,tpgid,minflt,majflt,time,pri,nice,vsz,rss,etime,pcpu,pmem,args")
-      (tramp-process-attributes-ps-format
-       (pid . number)
-       (euid . number)
-       (user . string)
-       (egid . number)
-       (comm . 52)
-       (state . 5)
-       (ppid . number)
-       (pgrp . number)
-       (sess . number)
-       (ttname . string)
-       (tpgid . number)
-       (minflt . number)
-       (majflt . number)
-       (time . tramp-ps-time)
-       (pri . number)
-       (nice . number)
-       (vsize . number)
-       (rss . number)
-       (etime . tramp-ps-time)
-       (pcpu . number)
-       (pmem . number)
-       (args)))
+      (tramp-process-attributes-ps-args "-acxww" "-o"
+                                        "pid,uid,user,gid,comm=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                        "-o" "state=abcde" "-o"
+                                        "ppid,pgid,sess,tty,tpgid,minflt,majflt,time,pri,nice,vsz,rss,etime,pcpu,pmem,args")
+      (tramp-process-attributes-ps-format (pid . number)
+                                          (euid . number)
+                                          (user . string)
+                                          (egid . number) (comm . 52)
+                                          (state . 5) (ppid . number)
+                                          (pgrp . number)
+                                          (sess . number)
+                                          (ttname . string)
+                                          (tpgid . number)
+                                          (minflt . number)
+                                          (majflt . number)
+                                          (time . tramp-ps-time)
+                                          (pri . number)
+                                          (nice . number)
+                                          (vsize . number)
+                                          (rss . number)
+                                          (etime . tramp-ps-time)
+                                          (pcpu . number)
+                                          (pmem . number) (args)))
      (tramp-connection-local-busybox-ps-profile
-      (tramp-process-attributes-ps-args "-o" "pid,user,group,comm=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" "-o" "stat=abcde" "-o" "ppid,pgid,tty,time,nice,etime,args")
-      (tramp-process-attributes-ps-format
-       (pid . number)
-       (user . string)
-       (group . string)
-       (comm . 52)
-       (state . 5)
-       (ppid . number)
-       (pgrp . number)
-       (ttname . string)
-       (time . tramp-ps-time)
-       (nice . number)
-       (etime . tramp-ps-time)
-       (args)))
+      (tramp-process-attributes-ps-args "-o"
+                                        "pid,user,group,comm=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                        "-o" "stat=abcde" "-o"
+                                        "ppid,pgid,tty,time,nice,etime,args")
+      (tramp-process-attributes-ps-format (pid . number)
+                                          (user . string)
+                                          (group . string) (comm . 52)
+                                          (state . 5) (ppid . number)
+                                          (pgrp . number)
+                                          (ttname . string)
+                                          (time . tramp-ps-time)
+                                          (nice . number)
+                                          (etime . tramp-ps-time)
+                                          (args)))
      (tramp-connection-local-bsd-ps-profile
-      (tramp-process-attributes-ps-args "-acxww" "-o" "pid,euid,user,egid,egroup,comm=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" "-o" "state,ppid,pgid,sid,tty,tpgid,minflt,majflt,time,pri,nice,vsz,rss,etimes,pcpu,pmem,args")
-      (tramp-process-attributes-ps-format
-       (pid . number)
-       (euid . number)
-       (user . string)
-       (egid . number)
-       (group . string)
-       (comm . 52)
-       (state . string)
-       (ppid . number)
-       (pgrp . number)
-       (sess . number)
-       (ttname . string)
-       (tpgid . number)
-       (minflt . number)
-       (majflt . number)
-       (time . tramp-ps-time)
-       (pri . number)
-       (nice . number)
-       (vsize . number)
-       (rss . number)
-       (etime . number)
-       (pcpu . number)
-       (pmem . number)
-       (args)))
+      (tramp-process-attributes-ps-args "-acxww" "-o"
+                                        "pid,euid,user,egid,egroup,comm=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                        "-o"
+                                        "state,ppid,pgid,sid,tty,tpgid,minflt,majflt,time,pri,nice,vsz,rss,etimes,pcpu,pmem,args")
+      (tramp-process-attributes-ps-format (pid . number)
+                                          (euid . number)
+                                          (user . string)
+                                          (egid . number)
+                                          (group . string) (comm . 52)
+                                          (state . string)
+                                          (ppid . number)
+                                          (pgrp . number)
+                                          (sess . number)
+                                          (ttname . string)
+                                          (tpgid . number)
+                                          (minflt . number)
+                                          (majflt . number)
+                                          (time . tramp-ps-time)
+                                          (pri . number)
+                                          (nice . number)
+                                          (vsize . number)
+                                          (rss . number)
+                                          (etime . number)
+                                          (pcpu . number)
+                                          (pmem . number) (args)))
      (tramp-connection-local-default-shell-profile
-      (shell-file-name . "/bin/sh")
-      (shell-command-switch . "-c"))
+      (shell-file-name . "/bin/sh") (shell-command-switch . "-c"))
      (tramp-connection-local-default-system-profile
-      (path-separator . ":")
-      (null-device . "/dev/null"))))
+      (path-separator . ":") (null-device . "/dev/null"))))
  '(corfu-quit-no-match t)
  '(custom-safe-themes
-   '("4594d6b9753691142f02e67b8eb0fda7d12f6cc9f1299a49b819312d6addad1d" "ffafb0e9f63935183713b204c11d22225008559fa62133a69848835f4f4a758c" "7964b513f8a2bb14803e717e0ac0123f100fb92160dcf4a467f530868ebaae3e" "524fa911b70d6b94d71585c9f0c5966fe85fb3a9ddd635362bfabd1a7981a307" "fee7287586b17efbfda432f05539b58e86e059e78006ce9237b8732fde991b4c" "4c56af497ddf0e30f65a7232a8ee21b3d62a8c332c6b268c81e9ea99b11da0d3" "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce" default))
- '(fci-rule-color "#3E4451")
+   '("4594d6b9753691142f02e67b8eb0fda7d12f6cc9f1299a49b819312d6addad1d"
+     "ffafb0e9f63935183713b204c11d22225008559fa62133a69848835f4f4a758c"
+     "7964b513f8a2bb14803e717e0ac0123f100fb92160dcf4a467f530868ebaae3e"
+     "524fa911b70d6b94d71585c9f0c5966fe85fb3a9ddd635362bfabd1a7981a307"
+     "fee7287586b17efbfda432f05539b58e86e059e78006ce9237b8732fde991b4c"
+     "4c56af497ddf0e30f65a7232a8ee21b3d62a8c332c6b268c81e9ea99b11da0d3"
+     "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce"
+     default))
  '(geiser-guile-load-init-file t nil nil "Customized with use-package geiser-guile")
+ '(geiser-repl-current-project-function 'projectile-project-root)
  '(global-display-line-numbers-mode t)
  '(indent-tabs-mode nil)
+ '(magit-display-buffer-function 'magit-display-buffer-same-window-except-diff-v1)
  '(org-export-backends '(ascii html icalendar latex md odt))
  '(package-selected-packages
-   '(undo-tree yasnippet-snippets which-key vertico treesit-auto terraform-mode smartparens pyvenv projectile paredit orderless marginalia magit lsp-ivy ligature hungry-delete geiser-guile exec-path-from-shell doom-themes doom-modeline direnv dap-mode crux corfu consult auctex async))
+   '(a68-mode ace-window aider async auctex cfrs consult copilot
+              copilot-chat corfu crux direnv doom-modeline doom-themes
+              eat eca eglot eglot-java exec-path-from-shell
+              geiser-guile geiser-overlay gradle-mode hungry-delete
+              hydra ivy jsonrpc kotlin-mode kotlin-ts-mode ligature lv
+              marginalia orderless org-jira paredit posframe
+              projectile pyvenv ripgrep smartparens terraform-mode
+              treesit-auto undo-tree vertico which-key
+              yasnippet-snippets))
  '(safe-local-variable-values
-   '((pyvenv-workon . remit-ide)
-     (checkdoc-minor-mode . t)
-     (pyvenv-workon . remit)
-     (pyvenv-workon . "frontplugin")
-     (major-mode . yaml-mode)
-     (pyvenv-workon . "remit3610")
-     (elpy-project-root . "\\./")
-     (elpy-project-root . \./)
-     (elpy-project-root "./")
-     (pyvenv-workon "remit")))
+   '((pyvenv-workon . remit-ide) (checkdoc-minor-mode . t)
+     (pyvenv-workon . remit) (pyvenv-workon . "frontplugin")
+     (major-mode . yaml-mode) (pyvenv-workon . "remit3610")
+     (elpy-project-root . "\\./") (elpy-project-root . \./)
+     (elpy-project-root "./") (pyvenv-workon "remit")))
  '(show-paren-mode t)
  '(tool-bar-mode nil)
  '(warning-suppress-log-types '((use-package) (use-package)))
@@ -651,3 +710,4 @@
  )
 (put 'narrow-to-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
+(put 'narrow-to-page 'disabled nil)
