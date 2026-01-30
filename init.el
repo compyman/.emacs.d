@@ -56,11 +56,15 @@
 (define-key global-map (kbd "C-z") (make-sparse-keymap))
 
 (use-package eca :ensure t)
+
 (use-package mcp
   :ensure t
   :custom (mcp-hub-servers
-           '(("rovo" . (:command "npx"
-                        :args ("-y" "mcp-remote" "https://mcp.atlassian.com/v1/sse"))))))
+           '(("filesystem" . (:command "npx"
+                              :args ("-y" "@modelcontextprotocol/server-filesystem")
+                              :roots ("/Users/nate/wave/wr-loyalty"
+                                      "/Users/nate/wave/remit-srv")))
+             ("git" . (:command "uvx" :args ("mcp-server-git" "--repository" "/Users/nate/wave/remit-srv"))))))
 
 
 
