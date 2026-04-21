@@ -30,7 +30,21 @@
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/")
              '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
-
+(use-package eglot
+  :custom
+  (eglot-report-progress t)
+  (eglot-autoshutdown t)
+  (eglot-connect-timeout nil)
+  (eglot-extend-to-xref t)
+  (eglot-sync-connect 5)
+  :config
+  (add-to-list
+   'eglot-server-programs
+   '((python-ts-mode python-mode) . ("uv" "tool" "run" "--with" "python-lsp-ruff" "--from" "python-lsp-server" "pylsp")))
+  (add-to-list
+   'eglot-server-programs
+   '((kotlin-ts-mode kotlin-mode). ("bash" "/opt/homebrew/Cellar/kotlin-lsp/0.253.10629/libexec/kotlin-lsp.sh" "--stdio")))
+  )
 
 (use-package claude-code-ide
   :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
@@ -38,8 +52,27 @@
   :config
   (claude-code-ide-emacs-tools-setup)) ; Optionally enable Emacs MCP tools
 
-(use-package eglot
-  :custom (eglot-report-progress nil))
+(use-package copilot
+  :ensure t)
+(use-package copilot-chat :ensure t)
+
+(define-key global-map (kbd "C-z") (make-sparse-keymap))
+
+(use-package eca :ensure t)
+
+(use-package mcp
+  :ensure t
+  :custom (mcp-hub-servers
+           '(("filesystem" . (:command "npx"
+                              :args ("-y" "@modelcontextprotocol/server-filesystem")
+                              :roots ("/Users/nate/wave/wr-loyalty"
+                                      "/Users/nate/wave/remit-srv")))
+             ("git" . (:command "uvx" :args ("mcp-server-git" "--repository" "/Users/nate/wave/remit-srv"))))))
+
+
+
+
+
 
 
 (use-package geiser-guile
@@ -73,18 +106,16 @@
                     '(font . "Monaspace Neon NF 10")
                     )))
 
-(setq split-width-threshold 1280)
-(setq split-height-threshold 800)
 
-;; kotlin IDE
-(use-package kotlin-mode
-  :after (dap-mode)
-  :config
-  (require 'dap-kotlin)
-  ;; should probably have been in dap-kotlin instead of lsp-kotlin
-  (setq lsp-kotlin-debug-adapter-path (or (executable-find "kotlin-debug-adapter") ""))
-  :hook
-  (kotlin-mode . lsp))
+;; ;; kotlin IDE
+;; (use-package kotlin-mode
+;;   :after (dap-mode)
+;;   :config
+;;   (require 'dap-kotlin)
+;;   ;; should probably have been in dap-kotlin instead of lsp-kotlin
+;;   (setq lsp-kotlin-debug-adapter-path (or (executable-find "kotlin-debug-adapter") ""))
+;;   :hook
+;;   (kotlin-mode . lsp))
 
 
 (use-package ligature
@@ -183,7 +214,10 @@
 ;;;;Org-mode
 (define-key global-map (kbd  "C-c l") 'org-store-link)
 (define-key global-map (kbd "C-c a") 'org-agenda)
-(setq org-agenda-files (list "~/org/work-agenda.org" "~/.notes"))
+(define-key global-map (kbd "C-c c") 'org-capture)
+(setq org-capture-templates
+      '(("S" "Standup" item (file+olp+datetree "~/org/work-agenda.org" "Standup"))))
+(setq org-agenda-files (list "~/org/" "~/.notes"))
 (setq org-log-done t)
 (org-babel-do-load-languages
  'org-babel-load-languages
@@ -226,6 +260,10 @@
   :ensure t
   :bind (("C-;" .  'avy-goto-word-or-subword-1)) )
 
+;;; ace window
+(use-package ace-window
+  :ensure t)
+
 (use-package yasnippet
   :ensure t
   :config
@@ -237,13 +275,12 @@
 
 
 ;;  Debug Adaptor Protocol Mode
-(use-package dap-mode
-  :ensure t
-  :custom (dap-python-debugger 'debugpy)
-  :config
-  (require 'dap-python)
-  (defun dap-python--pyenv-executable-find (command)
-    (executable-find command)))
+;; (use-package dap-mode
+;;   :custom (dap-python-debugger 'debugpy)
+;;   :config
+;;   (require 'dap-python)
+;;   (defun dap-python--pyenv-executable-find (command)
+;;     (executable-find command)))
 
 
 ;;; Handy CRUX addons
@@ -431,8 +468,6 @@
 
 
 ;; A few more useful configurations...
-(use-package emacs
-)
 
 (use-package emacs
   :init
@@ -510,6 +545,22 @@
   (global-corfu-mode))
 
 ;; A few more useful configurations...
+
+;; tramp config
+(connection-local-set-profile-variables
+ 'remote-direct-async-process
+ '((tramp-direct-async-process . t)))
+
+(connection-local-set-profiles
+ '(:application tramp :machine "server")
+ 'remote-direct-async-process)
+
+(setq magit-tramp-pipe-stty-settings 'pty)
+(with-eval-after-load 'tramp
+  (with-eval-after-load 'compile
+    (remove-hook 'compilation-mode-hook #'tramp-compile-disable-ssh-controlmaster-options)))
+
+
 					; END OF USER CONFIG
 
 (custom-set-variables
@@ -520,7 +571,8 @@
  '(auth-source-save-behavior nil)
  '(calendar-week-start-day 1)
  '(connection-local-criteria-alist
-   '(((:application eshell) eshell-connection-default-profile)
+   '(((:application vc-git) vc-git-connection-default-profile)
+     ((:application eshell) eshell-connection-default-profile)
      ((:application tramp :machine "localhost")
       tramp-connection-local-darwin-ps-profile)
      ((:application tramp :machine
@@ -530,7 +582,8 @@
       tramp-connection-local-default-system-profile
       tramp-connection-local-default-shell-profile)))
  '(connection-local-profile-alist
-   '((eshell-connection-default-profile (eshell-path-env-list))
+   '((vc-git-connection-default-profile (vc-git--program-version))
+     (eshell-connection-default-profile (eshell-path-env-list))
      (tramp-connection-local-darwin-ps-profile
       (tramp-process-attributes-ps-args "-acxww" "-o"
                                         "pid,uid,user,gid,comm=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -601,31 +654,12 @@
      (tramp-connection-local-default-system-profile
       (path-separator . ":") (null-device . "/dev/null"))))
  '(corfu-quit-no-match t)
- '(custom-safe-themes
-   '("d97ac0baa0b67be4f7523795621ea5096939a47e8b46378f79e78846e0e4ad3d"
-     "0f1341c0096825b1e5d8f2ed90996025a0d013a0978677956a9e61408fcd2c77"
-     "4594d6b9753691142f02e67b8eb0fda7d12f6cc9f1299a49b819312d6addad1d"
-     "ffafb0e9f63935183713b204c11d22225008559fa62133a69848835f4f4a758c"
-     "7964b513f8a2bb14803e717e0ac0123f100fb92160dcf4a467f530868ebaae3e"
-     "524fa911b70d6b94d71585c9f0c5966fe85fb3a9ddd635362bfabd1a7981a307"
-     "fee7287586b17efbfda432f05539b58e86e059e78006ce9237b8732fde991b4c"
-     "4c56af497ddf0e30f65a7232a8ee21b3d62a8c332c6b268c81e9ea99b11da0d3"
-     "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce"
-     default))
  '(geiser-guile-load-init-file t nil nil "Customized with use-package geiser-guile")
+ '(geiser-repl-current-project-function 'projectile-project-root)
  '(global-display-line-numbers-mode t)
  '(indent-tabs-mode nil)
+ '(magit-display-buffer-function 'magit-display-buffer-same-window-except-diff-v1)
  '(org-export-backends '(ascii html icalendar latex md odt))
- '(package-selected-packages
-   '(async auctex claude-code-ide cmake-mode cmake-project consult corfu
-           crux dap-mode direnv doom-modeline doom-themes eat eca
-           exec-path-from-shell geiser-guile hungry-delete jinja2-mode
-           ligature lsp-ivy magit marginalia orderless paredit
-           projectile pyvenv smartparens terraform-mode treesit-auto
-           undo-tree vertico vundo which-key yasnippet-snippets))
- '(package-vc-selected-packages
-   '((claude-code-ide :url
-                      "https://github.com/manzaltu/claude-code-ide.el")))
  '(safe-local-variable-values
    '((pyvenv-workon . remit-ide) (checkdoc-minor-mode . t)
      (pyvenv-workon . remit) (pyvenv-workon . "frontplugin")
@@ -645,3 +679,4 @@
  )
 (put 'narrow-to-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
+(put 'narrow-to-page 'disabled nil)
