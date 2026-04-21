@@ -1,10 +1,7 @@
 ;; init.el --- Milkmacs configuration file
 ;;;; Emacs Settings
 ;; Turn off mouse interface early in startup to avoid momentary display
-;;;(when (fboundp 'menu-bar-mode) (menu-bar-mode -1))
-;;; (when (fboundp 'tool-bar-mode) (tool-bar-mode -1))
 (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
-;; NEVER GARBAGE COLLECT
 (setq read-process-output-max (* 3 1024 1024)) ;; 1mb
 ;; quiet!!
 (setq ring-bell-function 'ignore)
@@ -49,6 +46,12 @@
    '((kotlin-ts-mode kotlin-mode). ("bash" "/opt/homebrew/Cellar/kotlin-lsp/0.253.10629/libexec/kotlin-lsp.sh" "--stdio")))
   )
 
+(use-package claude-code-ide
+  :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
+  :bind ("C-c C-'" . claude-code-ide-menu) ; Set your favorite keybinding
+  :config
+  (claude-code-ide-emacs-tools-setup)) ; Optionally enable Emacs MCP tools
+
 (use-package copilot
   :ensure t)
 (use-package copilot-chat :ensure t)
@@ -75,6 +78,7 @@
 (use-package geiser-guile
   :ensure t
   :custom (geiser-guile-load-init-file-p t))
+
 (use-package geiser :ensure t)
 
 (use-package direnv
@@ -86,22 +90,20 @@
   :config (which-key-mode)
   :ensure t)
 
-(use-package magit  :ensure t)
+(use-package magit
+  :ensure t)
 
 (use-package hungry-delete
   :config (global-hungry-delete-mode)
   :custom (hungry-delete-join-reluctantlyis t)
   :ensure t)
 
-(use-package async :ensure t)
-
-
 ;; Font and frame size
 (setq default-frame-alist
       (append (list '(width  . 72) '(height . 40)
                     '(vertical-scroll-bars . nil)
                     '(internal-border-width . 24)
-                    '(font . "Fira Code 10")
+                    '(font . "Monaspace Neon NF 10")
                     )))
 
 
@@ -155,12 +157,10 @@
 
 
 ;;UNDO TREE
-
-(use-package undo-tree
+(use-package vundo
   :ensure t
-  :init (global-undo-tree-mode)
-  :custom
-  (undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo"))))
+  :bind (("C-x u" . 'vundo)))
+
 ;;; Paredit Mode
 (use-package paredit
   :ensure t
@@ -223,20 +223,11 @@
  'org-babel-load-languages
  '((shell . t)))
 
-;;flymake
-
-
-;; DOOM
 
 (use-package nerd-icons
   :ensure t
-  ;; :custom
-  ;; The Nerd Font you want to use in GUI
-  ;; "Symbols Nerd Font Mono" is the default and is recommended
-  ;; but you can use any other Nerd Font if you want
   :config
-  (setq nerd-icons-font-family "DejaVuSansM Nerd Font Mono")
-  )
+  (setq nerd-icons-font-family "Monaface Neon NF"))
 
 (use-package doom-themes
   :ensure t
@@ -244,24 +235,20 @@
   ;; Global settings (defaults)
   (setq doom-themes-enable-bold t ; if nil, bold is universally disabled
         doom-themes-enable-italic t) ; if nil, italics is universally disabled
-  (load-theme 'doom-tokyo-night t)
   (defun my/apply-theme (appearance)
     "Load theme, taking current system APPEARANCE into consideration."
     (mapc #'disable-theme custom-enabled-themes)
     (pcase appearance
       ('light (load-theme 'doom-solarized-light t))
-      ('dark (load-theme 'doom-tokyo-night t))))
+      ('dark (load-theme 'doom-solararized-dark t))))
    (add-hook 'ns-system-appearance-change-functions #'my/apply-theme)
-
-  ;; Enable flashing mode-line on errors
-  (doom-themes-visual-bell-config)
-  (doom-themes-org-config))
+   (load-theme 'doom-solarized-dark t)
+   (doom-themes-visual-bell-config)
+   (doom-themes-org-config))
 
 (use-package doom-modeline
   :ensure t
   :config (doom-modeline-mode 1))
-
-
 
 (use-package treesit-auto
   :ensure t
@@ -311,9 +298,6 @@
   (crux-with-region-or-buffer indent-region)
   (crux-with-region-or-buffer untabify)
   (crux-with-region-or-line comment-or-uncomment-region))
-
-(use-package easy-kill
-  :bind ([remap kill-ring-save] . easy-kill))
 
 ;;; smartparens
 (use-package smartparens
@@ -670,31 +654,12 @@
      (tramp-connection-local-default-system-profile
       (path-separator . ":") (null-device . "/dev/null"))))
  '(corfu-quit-no-match t)
- '(custom-safe-themes
-   '("4594d6b9753691142f02e67b8eb0fda7d12f6cc9f1299a49b819312d6addad1d"
-     "ffafb0e9f63935183713b204c11d22225008559fa62133a69848835f4f4a758c"
-     "7964b513f8a2bb14803e717e0ac0123f100fb92160dcf4a467f530868ebaae3e"
-     "524fa911b70d6b94d71585c9f0c5966fe85fb3a9ddd635362bfabd1a7981a307"
-     "fee7287586b17efbfda432f05539b58e86e059e78006ce9237b8732fde991b4c"
-     "4c56af497ddf0e30f65a7232a8ee21b3d62a8c332c6b268c81e9ea99b11da0d3"
-     "2e05569868dc11a52b08926b4c1a27da77580daa9321773d92822f7a639956ce"
-     default))
  '(geiser-guile-load-init-file t nil nil "Customized with use-package geiser-guile")
  '(geiser-repl-current-project-function 'projectile-project-root)
  '(global-display-line-numbers-mode t)
  '(indent-tabs-mode nil)
  '(magit-display-buffer-function 'magit-display-buffer-same-window-except-diff-v1)
  '(org-export-backends '(ascii html icalendar latex md odt))
- '(package-selected-packages
-   '(a68-mode ace-window aider async auctex cfrs consult copilot
-              copilot-chat corfu crux direnv doom-modeline doom-themes
-              eat eca eglot eglot-java exec-path-from-shell
-              geiser-guile geiser-overlay gradle-mode hungry-delete
-              hydra ivy jsonrpc kotlin-mode kotlin-ts-mode ligature lv
-              marginalia orderless org-jira paredit posframe
-              projectile pyvenv ripgrep smartparens terraform-mode
-              treesit-auto undo-tree vertico which-key
-              yasnippet-snippets))
  '(safe-local-variable-values
    '((pyvenv-workon . remit-ide) (checkdoc-minor-mode . t)
      (pyvenv-workon . remit) (pyvenv-workon . "frontplugin")
