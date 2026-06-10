@@ -45,6 +45,10 @@
    '((kotlin-ts-mode kotlin-mode). ("bash" "/opt/homebrew/Cellar/kotlin-lsp/0.253.10629/libexec/kotlin-lsp.sh" "--stdio")))
   )
 
+(use-package websocket :ensure t)
+(use-package typst-preview :ensure t)
+
+
 (use-package claude-code-ide
   :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
   :bind ("C-c C-'" . claude-code-ide-menu) ; Set your favorite keybinding
@@ -73,27 +77,17 @@
 
 (use-package hungry-delete
   :config (global-hungry-delete-mode)
-  :custom (hungry-delete-join-reluctantlyis t)
+  :custom (hungry-delete-join-reluctantly t)
   :ensure t)
 
 ;; Font and frame size
-(setq default-frame-alist
-      (append (list '(width  . 72) '(height . 40)
-                    '(vertical-scroll-bars . nil)
-                    '(internal-border-width . 24)
-                    '(font . "Monaspace Neon NF 10")
-                    )))
+;; (setq default-frame-alist
+;;       (append (list '(width  . 72) '(height . 40)
+;;                     '(vertical-scroll-bars . nil)
+;;                     '(internal-border-width . 24)
+;;                     '(font . "Monaspace Neon NF 10")
+;;                     )))
 
-
-;; ;; kotlin IDE
-;; (use-package kotlin-mode
-;;   :after (dap-mode)
-;;   :config
-;;   (require 'dap-kotlin)
-;;   ;; should probably have been in dap-kotlin instead of lsp-kotlin
-;;   (setq lsp-kotlin-debug-adapter-path (or (executable-find "kotlin-debug-adapter") ""))
-;;   :hook
-;;   (kotlin-mode . lsp))
 
 
 (use-package ligature
@@ -202,7 +196,7 @@
 
 (use-package doom-themes
   :ensure t
-  :config
+  :init
   ;; Global settings (defaults)
   (setq doom-themes-enable-bold t ; if nil, bold is universally disabled
         doom-themes-enable-italic t) ; if nil, italics is universally disabled
@@ -506,24 +500,42 @@
   (with-eval-after-load 'compile
     (remove-hook 'compilation-mode-hook #'tramp-compile-disable-ssh-controlmaster-options)))
 
+(use-package nano
+  :after (doom-themes)
+  :defer t
+  :ensure t
+  :vc (:url "git@github.com:rougier/nano-emacs.git" :rev :newest)
+  :init
+  (require 'nano-base-colors)
+  (require 'nano-faces)
+  (require 'nano-defaults)
+  (require 'nano-modeline)
+  (require 'nano-help)
+  (require 'nano-layout)
+  (require 'nano-splash)
+  (tool-bar-mode -1))
 
-					; END OF USER CONFIG
+                                        ; END OF USER CONFIG
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("0f1341c0096825b1e5d8f2ed90996025a0d013a0978677956a9e61408fcd2c77"
+     default))
  '(geiser-guile-load-init-file t nil nil "Customized with use-package geiser-guile")
  '(package-selected-packages
    '(ace-window auctex claude-code-ide consult corfu crux direnv
-		doom-modeline doom-themes eat exec-path-from-shell
-		geiser-guile hungry-delete ligature magit marginalia
-		orderless paredit projectile terraform-mode
-		treesit-auto vertico vundo yasnippet-snippets))
+                doom-modeline doom-themes eat exec-path-from-shell
+                geiser-guile hungry-delete ligature magit marginalia
+                orderless paredit projectile terraform-mode
+                treesit-auto typst-preview typst-preview-mode
+                typst-ts-mode vertico vundo yasnippet-snippets))
  '(package-vc-selected-packages
    '((claude-code-ide :url
-		      "https://github.com/manzaltu/claude-code-ide.el"))))
+                      "https://github.com/manzaltu/claude-code-ide.el"))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
