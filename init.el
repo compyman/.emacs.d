@@ -1,8 +1,8 @@
-;; init.el --- Milkmacs configuration file
+;; init.el --- Milkmacs configuration file  -*- lexical-binding: t; -*-
 ;;;; Emacs Settings
 ;; Turn off mouse interface early in startup to avoid momentary display
 (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
-(setq read-process-output-max (* 3 1024 1024)) ;; 1mb
+(setq read-process-output-max (* 6 1024 12024))
 ;; quiet!!
 (setq ring-bell-function 'ignore)
 (when (eq system-type 'darwin)
@@ -22,14 +22,13 @@
 (setq auto-save-file-name-transforms
       `((".*" ,temporary-file-directory t)))
 (setq create-lockfiles nil)
-;; set auth-sources to use an encrypted file
-(setq auth-sources '((:source "~/.authinfo.gpg")))
 
-;; package.el
-(package-initialize)
-(add-to-list 'package-archives
-             '("melpa" . "https://melpa.org/packages/")
-             '("nongnu" . "https://elpa.nongnu.org/nongnu/"))
+(add-to-list 'package-archives 
+	     '("MELPA" .
+	       "http://melpa.org/packages/"))
+
+(use-package eat
+  :ensure t)
 (use-package eglot
   :custom
   (eglot-report-progress t)
@@ -46,34 +45,17 @@
    '((kotlin-ts-mode kotlin-mode). ("bash" "/opt/homebrew/Cellar/kotlin-lsp/0.253.10629/libexec/kotlin-lsp.sh" "--stdio")))
   )
 
+(use-package websocket :ensure t)
+(use-package typst-preview :ensure t)
+
+
 (use-package claude-code-ide
   :vc (:url "https://github.com/manzaltu/claude-code-ide.el" :rev :newest)
   :bind ("C-c C-'" . claude-code-ide-menu) ; Set your favorite keybinding
   :config
   (claude-code-ide-emacs-tools-setup)) ; Optionally enable Emacs MCP tools
 
-(use-package copilot
-  :ensure t)
-(use-package copilot-chat :ensure t)
-
 (define-key global-map (kbd "C-z") (make-sparse-keymap))
-
-(use-package eca :ensure t)
-
-(use-package mcp
-  :ensure t
-  :custom (mcp-hub-servers
-           '(("filesystem" . (:command "npx"
-                              :args ("-y" "@modelcontextprotocol/server-filesystem")
-                              :roots ("/Users/nate/wave/wr-loyalty"
-                                      "/Users/nate/wave/remit-srv")))
-             ("git" . (:command "uvx" :args ("mcp-server-git" "--repository" "/Users/nate/wave/remit-srv"))))))
-
-
-
-
-
-
 
 (use-package geiser-guile
   :ensure t
@@ -95,27 +77,17 @@
 
 (use-package hungry-delete
   :config (global-hungry-delete-mode)
-  :custom (hungry-delete-join-reluctantlyis t)
+  :custom (hungry-delete-join-reluctantly t)
   :ensure t)
 
 ;; Font and frame size
-(setq default-frame-alist
-      (append (list '(width  . 72) '(height . 40)
-                    '(vertical-scroll-bars . nil)
-                    '(internal-border-width . 24)
-                    '(font . "Monaspace Neon NF 10")
-                    )))
+;; (setq default-frame-alist
+;;       (append (list '(width  . 72) '(height . 40)
+;;                     '(vertical-scroll-bars . nil)
+;;                     '(internal-border-width . 24)
+;;                     '(font . "Monaspace Neon NF 10")
+;;                     )))
 
-
-;; ;; kotlin IDE
-;; (use-package kotlin-mode
-;;   :after (dap-mode)
-;;   :config
-;;   (require 'dap-kotlin)
-;;   ;; should probably have been in dap-kotlin instead of lsp-kotlin
-;;   (setq lsp-kotlin-debug-adapter-path (or (executable-find "kotlin-debug-adapter") ""))
-;;   :hook
-;;   (kotlin-mode . lsp))
 
 
 (use-package ligature
@@ -170,13 +142,6 @@
 (use-package tex
   :ensure auctex)
 
-(use-package pyvenv
-  :ensure t
-  :custom
-  (pyvenv-virtualenvwrapper-python "~/.pyenv/versions/3.11.6/bin/python")
-  :config (pyvenv-mode 1))
-
-
 ;;;; in mac add shell path to emacs exec path
 (use-package exec-path-from-shell
   :ensure t
@@ -227,11 +192,11 @@
 (use-package nerd-icons
   :ensure t
   :config
-  (setq nerd-icons-font-family "Monaface Neon NF"))
+  (setq nerd-icons-font-family "Monaspace Neon NF"))
 
 (use-package doom-themes
   :ensure t
-  :config
+  :init
   ;; Global settings (defaults)
   (setq doom-themes-enable-bold t ; if nil, bold is universally disabled
         doom-themes-enable-italic t) ; if nil, italics is universally disabled
@@ -242,7 +207,7 @@
       ('light (load-theme 'doom-solarized-light t))
       ('dark (load-theme 'doom-solararized-dark t))))
    (add-hook 'ns-system-appearance-change-functions #'my/apply-theme)
-   (load-theme 'doom-solarized-dark t)
+   (load-theme 'doom-solarized-light t)
    (doom-themes-visual-bell-config)
    (doom-themes-org-config))
 
@@ -298,13 +263,6 @@
   (crux-with-region-or-buffer indent-region)
   (crux-with-region-or-buffer untabify)
   (crux-with-region-or-line comment-or-uncomment-region))
-
-;;; smartparens
-(use-package smartparens
-  :ensure t
-  :hook (python-ts-mode . smartparens-strict-mode)
-  :config
-  (require 'smartparens-config))
 
 (use-package terraform-mode
   :ensure t
@@ -418,7 +376,6 @@
   ;; Optionally tweak the register preview window.
   ;; This adds thin lines, sorting and hides the mode line of the window.
   (advice-add #'register-preview :override #'consult-register-window)
-
   ;; Use Consult to select xref locations with preview
   (setq xref-show-xrefs-function #'consult-xref
         xref-show-definitions-function #'consult-xref)
@@ -426,27 +383,9 @@
   ;; Configure other variables and modes in the :config section,
   ;; after lazily loading the package.
   :config
-
-  ;; Optionally configure preview. The default value
-  ;; is 'any, such that any key triggers the preview.
-  ;; (setq consult-preview-key 'any)
-  ;; (setq consult-preview-key "M-.")
-  ;; (setq consult-preview-key '("S-<down>" "S-<up>"))
-  ;; For some commands and buffer sources it is useful to configure the
-  ;; :preview-key on a per-command basis using the `consult-customize' macro.
-  (consult-customize
-   consult-theme :preview-key '(:debounce 0.2 any)
-   consult-ripgrep consult-git-grep consult-grep
-   consult-bookmark consult-recent-file consult-xref
-   consult--source-bookmark consult--source-file-register
-   consult--source-recent-file consult--source-project-recent-file
-   ;; :preview-key "M-."
-   :preview-key '(:debounce 0.4 any))
-
   ;; Optionally configure the narrowing key.
   ;; Both < and C-+ work reasonably well.
   (setq consult-narrow-key "<") ;; "C-+"
-
   ;; Optionally make narrowing help available in the minibuffer.
   ;; You may want to use `embark-prefix-help-command' or which-key instead.
   ;; (define-key consult-narrow-map (vconcat consult-narrow-key "?") #'consult-narrow-help)
@@ -525,6 +464,7 @@
 
 (use-package corfu
   ;; Optional customizations
+  :ensure t
   :custom
   (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
   (corfu-auto t)                 ;; Enable auto completion
@@ -560,116 +500,42 @@
   (with-eval-after-load 'compile
     (remove-hook 'compilation-mode-hook #'tramp-compile-disable-ssh-controlmaster-options)))
 
+(use-package nano
+  :after (doom-themes)
+  :defer t
+  :ensure t
+  :vc (:url "git@github.com:rougier/nano-emacs.git" :rev :newest)
+  :init
+  (require 'nano-base-colors)
+  (require 'nano-faces)
+  (require 'nano-defaults)
+  (require 'nano-modeline)
+  (require 'nano-help)
+  (require 'nano-layout)
+  (require 'nano-splash)
+  (tool-bar-mode -1))
 
-					; END OF USER CONFIG
+                                        ; END OF USER CONFIG
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(auth-source-save-behavior nil)
- '(calendar-week-start-day 1)
- '(connection-local-criteria-alist
-   '(((:application vc-git) vc-git-connection-default-profile)
-     ((:application eshell) eshell-connection-default-profile)
-     ((:application tramp :machine "localhost")
-      tramp-connection-local-darwin-ps-profile)
-     ((:application tramp :machine
-                    "Nathan-Rosenbloom-XPW326CYG0-SW.local")
-      tramp-connection-local-darwin-ps-profile)
-     ((:application tramp)
-      tramp-connection-local-default-system-profile
-      tramp-connection-local-default-shell-profile)))
- '(connection-local-profile-alist
-   '((vc-git-connection-default-profile (vc-git--program-version))
-     (eshell-connection-default-profile (eshell-path-env-list))
-     (tramp-connection-local-darwin-ps-profile
-      (tramp-process-attributes-ps-args "-acxww" "-o"
-                                        "pid,uid,user,gid,comm=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                        "-o" "state=abcde" "-o"
-                                        "ppid,pgid,sess,tty,tpgid,minflt,majflt,time,pri,nice,vsz,rss,etime,pcpu,pmem,args")
-      (tramp-process-attributes-ps-format (pid . number)
-                                          (euid . number)
-                                          (user . string)
-                                          (egid . number) (comm . 52)
-                                          (state . 5) (ppid . number)
-                                          (pgrp . number)
-                                          (sess . number)
-                                          (ttname . string)
-                                          (tpgid . number)
-                                          (minflt . number)
-                                          (majflt . number)
-                                          (time . tramp-ps-time)
-                                          (pri . number)
-                                          (nice . number)
-                                          (vsize . number)
-                                          (rss . number)
-                                          (etime . tramp-ps-time)
-                                          (pcpu . number)
-                                          (pmem . number) (args)))
-     (tramp-connection-local-busybox-ps-profile
-      (tramp-process-attributes-ps-args "-o"
-                                        "pid,user,group,comm=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                        "-o" "stat=abcde" "-o"
-                                        "ppid,pgid,tty,time,nice,etime,args")
-      (tramp-process-attributes-ps-format (pid . number)
-                                          (user . string)
-                                          (group . string) (comm . 52)
-                                          (state . 5) (ppid . number)
-                                          (pgrp . number)
-                                          (ttname . string)
-                                          (time . tramp-ps-time)
-                                          (nice . number)
-                                          (etime . tramp-ps-time)
-                                          (args)))
-     (tramp-connection-local-bsd-ps-profile
-      (tramp-process-attributes-ps-args "-acxww" "-o"
-                                        "pid,euid,user,egid,egroup,comm=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                        "-o"
-                                        "state,ppid,pgid,sid,tty,tpgid,minflt,majflt,time,pri,nice,vsz,rss,etimes,pcpu,pmem,args")
-      (tramp-process-attributes-ps-format (pid . number)
-                                          (euid . number)
-                                          (user . string)
-                                          (egid . number)
-                                          (group . string) (comm . 52)
-                                          (state . string)
-                                          (ppid . number)
-                                          (pgrp . number)
-                                          (sess . number)
-                                          (ttname . string)
-                                          (tpgid . number)
-                                          (minflt . number)
-                                          (majflt . number)
-                                          (time . tramp-ps-time)
-                                          (pri . number)
-                                          (nice . number)
-                                          (vsize . number)
-                                          (rss . number)
-                                          (etime . number)
-                                          (pcpu . number)
-                                          (pmem . number) (args)))
-     (tramp-connection-local-default-shell-profile
-      (shell-file-name . "/bin/sh") (shell-command-switch . "-c"))
-     (tramp-connection-local-default-system-profile
-      (path-separator . ":") (null-device . "/dev/null"))))
- '(corfu-quit-no-match t)
+ '(custom-safe-themes
+   '("0f1341c0096825b1e5d8f2ed90996025a0d013a0978677956a9e61408fcd2c77"
+     default))
  '(geiser-guile-load-init-file t nil nil "Customized with use-package geiser-guile")
- '(geiser-repl-current-project-function 'projectile-project-root)
- '(global-display-line-numbers-mode t)
- '(indent-tabs-mode nil)
- '(magit-display-buffer-function 'magit-display-buffer-same-window-except-diff-v1)
- '(org-export-backends '(ascii html icalendar latex md odt))
- '(safe-local-variable-values
-   '((pyvenv-workon . remit-ide) (checkdoc-minor-mode . t)
-     (pyvenv-workon . remit) (pyvenv-workon . "frontplugin")
-     (major-mode . yaml-mode) (pyvenv-workon . "remit3610")
-     (elpy-project-root . "\\./") (elpy-project-root . \./)
-     (elpy-project-root "./") (pyvenv-workon "remit")))
- '(show-paren-mode t)
- '(tool-bar-mode nil)
- '(warning-suppress-log-types '((use-package) (use-package)))
- '(warning-suppress-types '((use-package))))
+ '(package-selected-packages
+   '(ace-window auctex claude-code-ide consult corfu crux direnv
+                doom-modeline doom-themes eat exec-path-from-shell
+                geiser-guile hungry-delete ligature magit marginalia
+                orderless paredit projectile terraform-mode
+                treesit-auto typst-preview typst-preview-mode
+                typst-ts-mode vertico vundo yasnippet-snippets))
+ '(package-vc-selected-packages
+   '((claude-code-ide :url
+                      "https://github.com/manzaltu/claude-code-ide.el"))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
