@@ -22,7 +22,7 @@
 (setq auto-save-file-name-transforms
       `((".*" ,temporary-file-directory t)))
 (setq create-lockfiles nil)
-
+(package-initialize)
 (add-to-list 'package-archives 
 	     '("MELPA" .
 	       "http://melpa.org/packages/"))
@@ -87,7 +87,6 @@
 ;;                     '(internal-border-width . 24)
 ;;                     '(font . "Monaspace Neon NF 10")
 ;;                     )))
-
 
 
 (use-package ligature
@@ -527,12 +526,13 @@
      default))
  '(geiser-guile-load-init-file t nil nil "Customized with use-package geiser-guile")
  '(package-selected-packages
-   '(ace-window auctex claude-code-ide consult corfu crux direnv
-                doom-modeline doom-themes eat exec-path-from-shell
-                geiser-guile hungry-delete ligature magit marginalia
-                orderless paredit projectile terraform-mode
-                treesit-auto typst-preview typst-preview-mode
-                typst-ts-mode vertico vundo yasnippet-snippets))
+   '(ace-window auctex claude-code-ide cmake-mode consult corfu crux
+                direnv doom-modeline doom-themes eat
+                exec-path-from-shell geiser-guile hungry-delete
+                ligature magit marginalia orderless paredit projectile
+                terraform-mode treesit-auto typst-preview
+                typst-preview-mode typst-ts-mode vertico vundo
+                yasnippet-snippets))
  '(package-vc-selected-packages
    '((claude-code-ide :url
                       "https://github.com/manzaltu/claude-code-ide.el"))))
